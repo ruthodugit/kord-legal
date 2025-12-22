@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Kord Legal",
-  description: "Legal services platform",
+  title: "Kord Legal - Brief Verification",
+  description: "Automated legal brief verification and citation review",
 };
 
 export default function RootLayout({
