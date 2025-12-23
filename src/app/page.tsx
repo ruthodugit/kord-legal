@@ -140,8 +140,6 @@ export default function Home() {
   
     // Unsupported formats
     alert("Unsupported file format. Please upload a .txt or .docx file.");
-  }, []);
-  
 
     reader.onerror = () => {
       setIsExtracting(false);
@@ -150,10 +148,10 @@ export default function Home() {
 
     reader.readAsText(file);
     
-    // Reset file input so the same file can be uploaded again
     event.target.value = "";
-  }, [performAnalysis]);
-
+  }, 
+  [performAnalysis]
+);
   return (
     <main className="min-h-screen bg-white dark:bg-black transition-colors duration-200">
       {/* Theme Toggle Button */}
