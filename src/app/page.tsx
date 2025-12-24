@@ -4,34 +4,36 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import mammoth from "mammoth";
 
 type AnalysisStatus = "idle" | "analyzing" | "complete";
+type FilingReadiness = "safe_to_file" | "file_with_caution" | "do_not_file";
 
-interface Citation {
-  text: string;
-  status: "verified" | "missing" | "mismatch";
-  issue?: string;
+interface FilingVerdict {
+  readiness: FilingReadiness;
+  justification: string[];
 }
 
-interface Claim {
-  text: string;
-  hasSupport: boolean;
-  issue?: string;
+interface CriticalIssue {
+  quote: string;
+  problem: string;
+  missingAuthority: string;
 }
 
-interface Inconsistency {
-  description: string;
-  severity: "high" | "medium" | "low";
+interface HallucinationSignal {
+  quote: string;
+  pattern: string;
+  risk: string;
 }
 
-interface RiskFlag {
-  description: string;
-  category: string;
+interface OpposingCounselAttack {
+  vulnerability: string;
+  likelyChallenge: string;
 }
 
-interface AnalysisResults {
-  citations: Citation[];
-  claims: Claim[];
-  inconsistencies: Inconsistency[];
-  riskFlags: RiskFlag[];
+interface LegalReviewMemo {
+  filingVerdict: FilingVerdict;
+  criticalIssues: CriticalIssue[];
+  hallucinationSignals: HallucinationSignal[];
+  opposingCounselPerspective: OpposingCounselAttack[];
+  jurisdictionNotes: string;
 }
 
 export default function Home() {
@@ -39,7 +41,7 @@ export default function Home() {
   const [isDark, setIsDark] = useState(true);
   const [status, setStatus] = useState<AnalysisStatus>("idle");
   const [currentStep, setCurrentStep] = useState("");
-  const [results, setResults] = useState<AnalysisResults | null>(null);
+  const [reviewMemo, setReviewMemo] = useState<LegalReviewMemo | null>(null);
   const [submittedDocument, setSubmittedDocument] = useState<string | null>(null);
   const [uploadTime, setUploadTime] = useState<string>("");
   const [isExtracting, setIsExtracting] = useState(false);
@@ -62,13 +64,14 @@ export default function Home() {
   const performAnalysis = useCallback(async (text: string) => {
     setStatus("analyzing");
     
-    // Simulate multi-step analysis
+    // Simulate multi-step analysis (internal process)
     const steps = [
       "Parsing document structure",
       "Extracting citations",
       "Verifying legal authorities",
-      "Reviewing factual claims",
-      "Checking consistency"
+      "Cross-checking factual assertions",
+      "Detecting hallucination patterns",
+      "Assessing filing risk"
     ];
 
     for (const step of steps) {
@@ -76,28 +79,59 @@ export default function Home() {
       await new Promise(resolve => setTimeout(resolve, 800));
     }
 
-    // Mock analysis results
-    const mockResults: AnalysisResults = {
-      citations: [
-        { text: "Smith v. Jones, 123 F.3d 456 (9th Cir. 2020)", status: "verified" },
-        { text: "United States v. Brown, 789 F.2d 123 (2d Cir. 2019)", status: "mismatch", issue: "Case year is 2018, not 2019" },
-        { text: "Johnson v. State, 456 U.S. 789 (2021)", status: "missing", issue: "Citation not found in federal reporters" },
+    // Generate legal review memo (evidence-based analysis)
+    const mockReviewMemo: LegalReviewMemo = {
+      filingVerdict: {
+        readiness: "file_with_caution",
+        justification: [
+          "Two citations contain factual errors that could be discovered by opposing counsel",
+          "One material damages claim lacks record support and invites challenge",
+          "No issues rise to sanctionable conduct, but credibility exposure is present"
+        ]
+      },
+      criticalIssues: [
+        {
+          quote: "United States v. Brown, 789 F.2d 123 (2d Cir. 2019)",
+          problem: "The cited case was decided in 2018, not 2019. This factual error in a cited authority undermines credibility and suggests inadequate case verification.",
+          missingAuthority: "Verified reporter citation showing correct year of decision"
+        },
+        {
+          quote: "Plaintiff suffered damages exceeding $500,000",
+          problem: "No supporting documentation, record reference, expert report, or evidentiary foundation provided for this specific figure. Unsupported damage assertions can be struck or viewed as speculative.",
+          missingAuthority: "Citation to discovery materials, exhibits, expert declarations, or itemized damage calculations establishing the claimed amount"
+        },
+        {
+          quote: "Johnson v. State, 456 U.S. 789 (2021)",
+          problem: "This citation cannot be verified in U.S. Reports. The case may not exist, may be miscited, or may be from a different reporter entirely.",
+          missingAuthority: "Verified citation to the actual case in proper reporter format, or removal if the case does not exist"
+        }
       ],
-      claims: [
-        { text: "Defendant failed to appear at three consecutive hearings", hasSupport: true },
-        { text: "Plaintiff suffered damages exceeding $500,000", hasSupport: false, issue: "No supporting documentation referenced" },
+      hallucinationSignals: [
+        {
+          quote: "Courts have consistently held that [legal proposition]",
+          pattern: "Vague authority invocation without specific case citations",
+          risk: "Generic phrases like 'courts have held' or 'it is well established' without supporting citations are common AI hallucination patterns. Opposing counsel may challenge lack of specific authority."
+        },
+        {
+          quote: "This jurisdiction clearly recognizes...",
+          pattern: "Overconfident legal conclusion without pinpoint citation",
+          risk: "Assertive language ('clearly,' 'unquestionably') without supporting case law suggests potential AI-generated content. Verify that controlling authority actually supports this statement."
+        }
       ],
-      inconsistencies: [
-        { description: "Page 3 states incident occurred on March 15; page 7 references March 18", severity: "high" },
-        { description: "Jurisdiction claimed under both state and federal law without conflict analysis", severity: "medium" },
+      opposingCounselPerspective: [
+        {
+          vulnerability: "Citation errors in United States v. Brown and Johnson v. State",
+          likelyChallenge: "Opposing counsel will verify these citations, discover the errors, and argue in response brief that plaintiff's counsel failed to properly research authorities, casting doubt on all legal arguments presented."
+        },
+        {
+          vulnerability: "Unsupported $500,000 damages claim",
+          likelyChallenge: "Motion to strike the specific damage figure as speculative and unsupported by record evidence. May also argue bad faith or Rule 11 concerns if no reasonable basis exists for the amount."
+        }
       ],
-      riskFlags: [
-        { description: "Citation formatting does not conform to Bluebook standards", category: "Formatting" },
-        { description: "Statute cited was amended after the date of alleged conduct", category: "Authority" },
-      ]
+      jurisdictionNotes: "Federal courts in this circuit apply heightened scrutiny to citation accuracy following recent Rule 11 enforcement actions involving AI-generated briefs. The Second Circuit requires strict Bluebook compliance and verifiable citations to primary sources. Local rules mandate certification of research accuracy."
     };
 
-    setResults(mockResults);
+    setReviewMemo(mockReviewMemo);
     setStatus("complete");
   }, []);
 
@@ -175,104 +209,113 @@ export default function Home() {
 
       {/* Pre-Upload State: Landing Page */}
       {!submittedDocument ? (
-        <div className="min-h-screen flex items-center justify-center px-4 py-8">
-          <div className="w-full max-w-3xl mx-auto text-center space-y-8">
-            {/* Header Section */}
-            <div className="space-y-6">
-              <div className="text-xs tracking-[0.3em] text-gray-400 dark:text-zinc-500 uppercase font-medium">
-                KORD LEGAL
+        <div className="min-h-screen flex flex-col">
+          <div className="flex-1 flex items-center justify-center px-4 py-8">
+            <div className="w-full max-w-3xl mx-auto text-center space-y-8">
+              {/* Header Section */}
+              <div className="space-y-6">
+                <div className="text-xs tracking-[0.3em] text-gray-400 dark:text-zinc-500 uppercase font-medium">
+                  KORD LEGAL
+                </div>
+                
+                <h1 className="text-5xl md:text-6xl font-bold text-gray-900 dark:text-white leading-tight">
+                  AI Legal Brief Investigator
+                </h1>
+                
+                <p className="text-base md:text-lg text-gray-500 dark:text-zinc-400 leading-relaxed max-w-2xl mx-auto">
+                  Upload a legal brief or motion. Kord investigates every citation, claim, and argument to uncover AI hallucinations, misused precedent, and vulnerabilities that could trigger sanctions
+                </p>
               </div>
-              
-              <h1 className="text-5xl md:text-6xl font-bold text-gray-900 dark:text-white leading-tight">
-                AI Legal Brief Investigator
-              </h1>
-              
-              <p className="text-base md:text-lg text-gray-500 dark:text-zinc-400 leading-relaxed max-w-2xl mx-auto">
-                Upload a legal brief or motion. Kord investigates every citation, claim, and argument to uncover AI hallucinations, misused precedent, and vulnerabilities that could trigger sanctions
-              </p>
-            </div>
 
-            {/* Input Section */}
-            <div className="relative">
-              <textarea
-                value={briefText}
-                onChange={(e) => {
-                  setBriefText(e.target.value);
-                  setExtractionError("");
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                    handleSubmit();
-                  }
-                }}
-                rows={6}
-                disabled={isExtracting}
-                className="w-full px-6 py-4 bg-white dark:bg-zinc-900/50 border border-gray-200 dark:border-zinc-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-zinc-700 transition-all resize-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-600 text-base disabled:opacity-50 disabled:cursor-not-allowed"
-                placeholder="Paste your legal brief, motion, or complaint here"
-              />
-              
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileUpload}
-                accept=".txt,.doc,.docx,.pdf"
-                className="hidden"
-                disabled={isExtracting}
-              />
-              
-              <div className="absolute bottom-4 right-4 flex items-center gap-3">
-                <button
-                  onClick={() => fileInputRef.current?.click()}
+              {/* Input Section */}
+              <div className="relative">
+                <textarea
+                  value={briefText}
+                  onChange={(e) => {
+                    setBriefText(e.target.value);
+                    setExtractionError("");
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                      handleSubmit();
+                    }
+                  }}
+                  rows={6}
                   disabled={isExtracting}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  aria-label="Upload file"
-                >
-                  <svg className="w-5 h-5 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                  </svg>
-                </button>
-                <button
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
-                  aria-label="Voice input"
+                  className="w-full px-6 py-4 bg-white dark:bg-zinc-900/50 border border-gray-200 dark:border-zinc-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-zinc-700 transition-all resize-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-600 text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                  placeholder="Paste your legal brief, motion, or complaint here"
+                />
+                
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                  accept=".txt,.doc,.docx,.pdf"
+                  className="hidden"
                   disabled={isExtracting}
+                />
+                
+                <div className="absolute bottom-4 right-4 flex items-center gap-3">
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isExtracting}
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label="Upload file"
+                  >
+                    <svg className="w-5 h-5 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                  </button>
+                  <button
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+                    aria-label="Voice input"
+                    disabled={isExtracting}
+                  >
+                    <svg className="w-5 h-5 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              {/* Extraction Status */}
+              {isExtracting && (
+                <div className="text-sm text-gray-500 dark:text-zinc-500 flex items-center justify-center gap-2">
+                  <div className="w-1.5 h-1.5 bg-gray-400 dark:bg-zinc-600 rounded-full animate-pulse" />
+                  Extracting document text
+                </div>
+              )}
+
+              {/* Extraction Error */}
+              {extractionError && (
+                <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3">
+                  {extractionError}
+                </div>
+              )}
+
+              {/* Submit Button - Only for manual paste */}
+              {briefText.trim() && !isExtracting && (
+                <button
+                  onClick={handleSubmit}
+                  className="px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-black rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
                 >
-                  <svg className="w-5 h-5 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                  </svg>
+                  Analyze Document
                 </button>
-              </div>
+              )}
             </div>
+          </div>
 
-            {/* Extraction Status */}
-            {isExtracting && (
-              <div className="text-sm text-gray-500 dark:text-zinc-500 flex items-center justify-center gap-2">
-                <div className="w-1.5 h-1.5 bg-gray-400 dark:bg-zinc-600 rounded-full animate-pulse" />
-                Extracting document text
-              </div>
-            )}
-
-            {/* Extraction Error */}
-            {extractionError && (
-              <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3">
-                {extractionError}
-              </div>
-            )}
-
-            {/* Submit Button - Only for manual paste */}
-            {briefText.trim() && !isExtracting && (
-              <button
-                onClick={handleSubmit}
-                className="px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-black rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
-              >
-                Analyze Document
-              </button>
-            )}
+          {/* Footer */}
+          <div className="pb-6 text-center">
+            <p className="text-xs text-gray-500 dark:text-zinc-500">
+              SOC2 Compliant. Documents are encrypted and never used for training
+            </p>
           </div>
         </div>
       ) : (
         /* Post-Upload State: Two-Panel Review Interface */
-        <div className="min-h-screen px-4 py-8">
-          <div className="w-full max-w-7xl mx-auto">
+        <div className="min-h-screen flex flex-col px-4 py-8">
+          <div className="flex-1 w-full max-w-7xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Left Panel: Document */}
               <div className="space-y-4">
@@ -290,7 +333,7 @@ export default function Home() {
                       setSubmittedDocument(null);
                       setBriefText("");
                       setStatus("idle");
-                      setResults(null);
+                      setReviewMemo(null);
                     }}
                     className="text-xs text-gray-500 dark:text-zinc-500 hover:text-gray-700 dark:hover:text-zinc-400 transition-colors"
                   >
@@ -327,77 +370,137 @@ export default function Home() {
                     </div>
                   )}
 
-                  {status === "complete" && results && (
-                    <div className="space-y-6">
-                      {/* Citations */}
+                  {status === "complete" && reviewMemo && (
+                    <div className="space-y-8 text-sm">
+                      {/* Filing Readiness Verdict */}
                       <div>
-                        <h2 className="text-xs font-semibold text-gray-900 dark:text-white mb-3 uppercase tracking-wider">
-                          Citations
-                        </h2>
-                        <div className="space-y-3">
-                          {results.citations.map((citation, idx) => (
-                            <div key={idx} className="text-sm border-l-2 pl-3 py-1.5" 
-                              style={{ borderColor: citation.status === "verified" ? "#10b981" : citation.status === "mismatch" ? "#f59e0b" : "#ef4444" }}>
-                              <div className="font-mono text-xs text-gray-900 dark:text-white mb-1">{citation.text}</div>
-                              {citation.issue && (
-                                <div className="text-xs text-gray-600 dark:text-zinc-400">{citation.issue}</div>
-                              )}
-                            </div>
-                          ))}
+                        <div className="flex items-center gap-2 mb-3">
+                          <h2 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wide">
+                            Filing Readiness
+                          </h2>
+                          <span className={`text-xs px-2.5 py-1 rounded font-bold uppercase tracking-wide ${
+                            reviewMemo.filingVerdict.readiness === 'do_not_file' 
+                              ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                              : reviewMemo.filingVerdict.readiness === 'file_with_caution'
+                              ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'
+                              : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                          }`}>
+                            {reviewMemo.filingVerdict.readiness.replace(/_/g, ' ')}
+                          </span>
                         </div>
+                        <ul className="space-y-1.5 text-gray-700 dark:text-zinc-300">
+                          {reviewMemo.filingVerdict.justification.map((bullet, idx) => (
+                            <li key={idx} className="flex gap-2">
+                              <span className="text-gray-400 dark:text-zinc-500">•</span>
+                              <span>{bullet}</span>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
 
-                      {/* Claims */}
-                      <div>
-                        <h2 className="text-xs font-semibold text-gray-900 dark:text-white mb-3 uppercase tracking-wider">
-                          Claims
-                        </h2>
-                        <div className="space-y-3">
-                          {results.claims.map((claim, idx) => (
-                            <div key={idx} className="text-sm border-l-2 pl-3 py-1.5"
-                              style={{ borderColor: claim.hasSupport ? "#10b981" : "#ef4444" }}>
-                              <div className="text-xs text-gray-900 dark:text-white mb-1">{claim.text}</div>
-                              {claim.issue && (
-                                <div className="text-xs text-gray-600 dark:text-zinc-400">{claim.issue}</div>
-                              )}
-                            </div>
-                          ))}
+                      {/* Critical Issues */}
+                      {reviewMemo.criticalIssues.length > 0 && (
+                        <div>
+                          <h2 className="text-sm font-bold text-red-600 dark:text-red-400 mb-4 uppercase tracking-wide">
+                            Critical Issues
+                          </h2>
+                          <div className="space-y-5">
+                            {reviewMemo.criticalIssues.map((issue, idx) => (
+                              <div key={idx} className="space-y-3">
+                                <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900/30 rounded p-3">
+                                  <div className="text-xs text-red-600 dark:text-red-400 font-semibold mb-1.5">DOCUMENT QUOTE</div>
+                                  <div className="font-mono text-xs text-gray-900 dark:text-white italic">
+                                    "{issue.quote}"
+                                  </div>
+                                </div>
+                                <div className="pl-3 border-l-2 border-red-500">
+                                  <div className="text-xs text-red-600 dark:text-red-400 font-semibold mb-1">PROBLEM</div>
+                                  <div className="text-gray-900 dark:text-white mb-3">{issue.problem}</div>
+                                  <div className="text-xs text-red-600 dark:text-red-400 font-semibold mb-1">MISSING AUTHORITY</div>
+                                  <div className="text-gray-700 dark:text-zinc-300">{issue.missingAuthority}</div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      </div>
+                      )}
 
-                      {/* Inconsistencies */}
-                      <div>
-                        <h2 className="text-xs font-semibold text-gray-900 dark:text-white mb-3 uppercase tracking-wider">
-                          Inconsistencies
-                        </h2>
-                        <div className="space-y-2">
-                          {results.inconsistencies.map((item, idx) => (
-                            <div key={idx} className="text-xs text-gray-700 dark:text-zinc-300 border-l-2 border-orange-500 pl-3 py-1.5">
-                              {item.description}
-                            </div>
-                          ))}
+                      {/* Hallucination Risk Signals */}
+                      {reviewMemo.hallucinationSignals.length > 0 && (
+                        <div>
+                          <h2 className="text-sm font-bold text-orange-600 dark:text-orange-400 mb-4 uppercase tracking-wide">
+                            Hallucination Risk Signals
+                          </h2>
+                          <div className="space-y-4">
+                            {reviewMemo.hallucinationSignals.map((signal, idx) => (
+                              <div key={idx} className="space-y-2">
+                                <div className="bg-orange-50 dark:bg-orange-900/10 border border-orange-200 dark:border-orange-900/30 rounded p-3">
+                                  <div className="font-mono text-xs text-gray-900 dark:text-white italic">
+                                    "{signal.quote}"
+                                  </div>
+                                </div>
+                                <div className="pl-3 border-l-2 border-orange-500 space-y-2">
+                                  <div>
+                                    <div className="text-xs text-orange-600 dark:text-orange-400 font-semibold mb-1">PATTERN</div>
+                                    <div className="text-gray-900 dark:text-white text-xs">{signal.pattern}</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-xs text-orange-600 dark:text-orange-400 font-semibold mb-1">RISK</div>
+                                    <div className="text-gray-700 dark:text-zinc-300 text-xs">{signal.risk}</div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      </div>
+                      )}
 
-                      {/* Risk Flags */}
-                      <div>
-                        <h2 className="text-xs font-semibold text-gray-900 dark:text-white mb-3 uppercase tracking-wider">
-                          Risk Flags
-                        </h2>
-                        <div className="space-y-2">
-                          {results.riskFlags.map((flag, idx) => (
-                            <div key={idx} className="text-xs border-l-2 border-red-500 pl-3 py-1.5">
-                              <div className="text-gray-500 dark:text-zinc-500 uppercase text-[10px] mb-0.5">{flag.category}</div>
-                              <div className="text-gray-700 dark:text-zinc-300">{flag.description}</div>
-                            </div>
-                          ))}
+                      {/* Opposing Counsel Perspective */}
+                      {reviewMemo.opposingCounselPerspective.length > 0 && (
+                        <div>
+                          <h2 className="text-sm font-bold text-purple-600 dark:text-purple-400 mb-4 uppercase tracking-wide">
+                            Opposing Counsel Perspective
+                          </h2>
+                          <div className="space-y-4">
+                            {reviewMemo.opposingCounselPerspective.map((attack, idx) => (
+                              <div key={idx} className="border-l-2 border-purple-500 pl-4 space-y-2">
+                                <div>
+                                  <div className="text-xs text-purple-600 dark:text-purple-400 font-semibold mb-1">VULNERABILITY</div>
+                                  <div className="text-gray-900 dark:text-white text-xs">{attack.vulnerability}</div>
+                                </div>
+                                <div>
+                                  <div className="text-xs text-purple-600 dark:text-purple-400 font-semibold mb-1">LIKELY CHALLENGE</div>
+                                  <div className="text-gray-700 dark:text-zinc-300 text-xs">{attack.likelyChallenge}</div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      </div>
+                      )}
+
+                      {/* Jurisdiction Notes */}
+                      {reviewMemo.jurisdictionNotes && (
+                        <div>
+                          <h2 className="text-sm font-bold text-blue-600 dark:text-blue-400 mb-3 uppercase tracking-wide">
+                            Jurisdiction & Filing Standards
+                          </h2>
+                          <div className="border-l-2 border-blue-500 pl-4 text-gray-700 dark:text-zinc-300 text-xs leading-relaxed">
+                            {reviewMemo.jurisdictionNotes}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Footer */}
+          <div className="pt-6 text-center">
+            <p className="text-xs text-gray-500 dark:text-zinc-500">
+              SOC2 Compliant. Documents are encrypted and never used for training
+            </p>
           </div>
         </div>
       )}
