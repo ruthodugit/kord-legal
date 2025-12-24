@@ -38,6 +38,7 @@ interface LegalReviewMemo {
 
 export default function Home() {
   const [briefText, setBriefText] = useState("");
+  const [isDark, setIsDark] = useState(true);
   const [status, setStatus] = useState<AnalysisStatus>("idle");
   const [currentStep, setCurrentStep] = useState("");
   const [reviewMemo, setReviewMemo] = useState<LegalReviewMemo | null>(null);
@@ -46,8 +47,67 @@ export default function Home() {
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractionError, setExtractionError] = useState<string>("");
   const [selectedIssue, setSelectedIssue] = useState<any>(null);
-  const [hoveredIssue, setHoveredIssue] = useState<number | null>(null);
+  const [selectedIssueType, setSelectedIssueType] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const issueRefs = useRef<{ [key: string]: HTMLSpanElement | null }>({});
+
+  // Auto-select first high-risk hallucination on analysis complete
+  useEffect(() => {
+    if (status === "complete" && reviewMemo && !selectedIssue) {
+      // Prioritize hallucinations (highest risk) first
+      if (reviewMemo.hallucinationSignals.length > 0) {
+        const firstHallucination = reviewMemo.hallucinationSignals[0];
+        setSelectedIssue(firstHallucination);
+        setSelectedIssueType("hallucination");
+        
+        // Scroll to issue in document with delay to ensure rendering
+        setTimeout(() => {
+          const issueKey = `hallucination-0`;
+          const element = issueRefs.current[issueKey];
+          if (element) {
+            // Get the document viewer container
+            const viewer = document.getElementById('document-viewer');
+            if (viewer) {
+              // Calculate the position to center the element
+              const elementTop = element.offsetTop;
+              const viewerHeight = viewer.clientHeight;
+              const elementHeight = element.clientHeight;
+              const scrollPosition = elementTop - (viewerHeight / 2) + (elementHeight / 2);
+              
+              viewer.scrollTo({
+                top: scrollPosition,
+                behavior: 'smooth'
+              });
+            }
+          }
+        }, 300);
+      } else if (reviewMemo.criticalIssues.length > 0) {
+        // Fall back to critical issues if no hallucinations
+        const firstIssue = reviewMemo.criticalIssues[0];
+        setSelectedIssue(firstIssue);
+        setSelectedIssueType("critical");
+        
+        setTimeout(() => {
+          const issueKey = `critical-0`;
+          const element = issueRefs.current[issueKey];
+          if (element) {
+            const viewer = document.getElementById('document-viewer');
+            if (viewer) {
+              const elementTop = element.offsetTop;
+              const viewerHeight = viewer.clientHeight;
+              const elementHeight = element.clientHeight;
+              const scrollPosition = elementTop - (viewerHeight / 2) + (elementHeight / 2);
+              
+              viewer.scrollTo({
+                top: scrollPosition,
+                behavior: 'smooth'
+              });
+            }
+          }
+        }, 300);
+      }
+    }
+  }, [status, reviewMemo, selectedIssue]);
 
   const performAnalysis = useCallback(async (text: string) => {
     setStatus("analyzing");
@@ -189,6 +249,29 @@ export default function Home() {
 
   const metrics = getRiskMetrics();
 
+  // Handle issue click
+  const handleIssueClick = (issue: any, type: string, index: number) => {
+    setSelectedIssue(issue);
+    setSelectedIssueType(type);
+    
+    const issueKey = `${type}-${index}`;
+    const element = issueRefs.current[issueKey];
+    if (element) {
+      const viewer = document.getElementById('document-viewer');
+      if (viewer) {
+        const elementTop = element.offsetTop;
+        const viewerHeight = viewer.clientHeight;
+        const elementHeight = element.clientHeight;
+        const scrollPosition = elementTop - (viewerHeight / 2) + (elementHeight / 2);
+        
+        viewer.scrollTo({
+          top: scrollPosition,
+          behavior: 'smooth'
+        });
+      }
+    }
+  };
+
   return (
     <main className="min-h-screen bg-[#0A0A0A] transition-colors duration-200">
 
@@ -311,10 +394,10 @@ export default function Home() {
         </div>
       ) : (
         /* Post-Upload State: 3-Panel Dashboard */
-        <div className="min-h-screen flex flex-col">
+        <div className="h-screen overflow-hidden flex flex-col">
           <div className="flex-1 flex overflow-hidden">
             {/* Left Sidebar: Summary & Risk Score */}
-            <div className="w-72 bg-[#121212] p-6 overflow-y-auto flex flex-col gap-6">
+            <div className="w-72 bg-[#121212] p-6 h-full overflow-y-auto flex flex-col gap-6 sticky top-0">
               {/* Header */}
               <div>
                 <button
@@ -440,12 +523,35 @@ export default function Home() {
                   </div>
                 </>
               )}
+
+              {/* Theme Toggle - Bottom of Sidebar */}
+              <div className="mt-auto pt-6 border-t border-gray-800">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-gray-500 uppercase tracking-wider">Theme</span>
+                  <button
+                    onClick={() => setIsDark(!isDark)}
+                    className="p-2 rounded-lg bg-[#2A2A2A] hover:bg-[#353535] transition-colors"
+                    aria-label="Toggle theme"
+                    title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                  >
+                    {isDark ? (
+                      <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Center Panel: Document Viewer */}
-            <div className="flex-1 bg-[#1A1A1A] overflow-y-auto relative">
+            <div className="flex-1 bg-[#1A1A1A] h-full overflow-y-auto relative" id="document-viewer">
               {/* Heatmap Scrollbar */}
-              <div className="absolute right-0 top-0 bottom-0 w-2 bg-[#0F0F0F]">
+              <div className="absolute right-0 top-0 bottom-0 w-2 bg-[#0F0F0F] z-10">
                 {status === "complete" && reviewMemo && (
                   <>
                     {/* Simulate error density markers */}
@@ -457,54 +563,204 @@ export default function Home() {
               </div>
 
               <div className="max-w-4xl mx-auto px-12 py-16">
-                <pre 
-                  className="text-[15px] text-gray-300 whitespace-pre-wrap leading-[1.9] font-light"
-                  style={{ fontFamily: 'Baskerville, "Libre Baskerville", serif' }}
-                >
-                  {submittedDocument}
-                </pre>
+                {status === "complete" && reviewMemo ? (
+                  <div 
+                    className="text-[15px] text-gray-300 whitespace-pre-wrap leading-[1.9] font-light"
+                    style={{ fontFamily: 'Baskerville, "Libre Baskerville", serif' }}
+                  >
+                    {(() => {
+                      if (!submittedDocument) return null;
+                      
+                      // Collect all issues with their positions
+                      const issues: Array<{
+                        start: number;
+                        end: number;
+                        quote: string;
+                        type: string;
+                        index: number;
+                        issue: any;
+                      }> = [];
+
+                      reviewMemo.criticalIssues.forEach((issue, idx) => {
+                        const start = submittedDocument.indexOf(issue.quote);
+                        if (start !== -1) {
+                          issues.push({
+                            start,
+                            end: start + issue.quote.length,
+                            quote: issue.quote,
+                            type: 'critical',
+                            index: idx,
+                            issue
+                          });
+                        }
+                      });
+
+                      reviewMemo.hallucinationSignals.forEach((signal, idx) => {
+                        const start = submittedDocument.indexOf(signal.quote);
+                        if (start !== -1) {
+                          issues.push({
+                            start,
+                            end: start + signal.quote.length,
+                            quote: signal.quote,
+                            type: 'hallucination',
+                            index: idx,
+                            issue: signal
+                          });
+                        }
+                      });
+
+                      // Sort by position
+                      issues.sort((a, b) => a.start - b.start);
+
+                      // Build the highlighted document
+                      const parts = [];
+                      let lastEnd = 0;
+
+                      issues.forEach(({ start, end, quote, type, index, issue }) => {
+                        // Add text before this issue
+                        if (start > lastEnd) {
+                          parts.push(submittedDocument.substring(lastEnd, start));
+                        }
+
+                        // Add highlighted issue
+                        const issueKey = `${type}-${index}`;
+                        const isSelected = selectedIssue === issue;
+                        
+                        parts.push(
+                          <span
+                            key={issueKey}
+                            ref={(el) => { issueRefs.current[issueKey] = el; }}
+                            className={
+                              type === 'critical'
+                                ? `bg-orange-500/20 border-b-2 border-orange-500 cursor-pointer hover:bg-orange-500/30 transition-colors rounded-sm px-1 ${
+                                    isSelected ? 'ring-2 ring-orange-400 ring-offset-2 ring-offset-[#1A1A1A]' : ''
+                                  }`
+                                : `bg-red-500/20 border-b-2 border-red-500 cursor-pointer hover:bg-red-500/30 transition-colors rounded-sm px-1 ${
+                                    isSelected ? 'ring-2 ring-red-400 ring-offset-2 ring-offset-[#1A1A1A]' : ''
+                                  }`
+                            }
+                            onClick={() => handleIssueClick(issue, type, index)}
+                          >
+                            {quote}
+                          </span>
+                        );
+
+                        lastEnd = end;
+                      });
+
+                      // Add remaining text
+                      if (lastEnd < submittedDocument.length) {
+                        parts.push(submittedDocument.substring(lastEnd));
+                      }
+
+                      return parts;
+                    })()}
+                  </div>
+                ) : (
+                  <pre 
+                    className="text-[15px] text-gray-300 whitespace-pre-wrap leading-[1.9] font-light"
+                    style={{ fontFamily: 'Baskerville, "Libre Baskerville", serif' }}
+                  >
+                    {submittedDocument}
+                  </pre>
+                )}
               </div>
             </div>
 
             {/* Right Panel: Inspector */}
-            <div className="w-80 bg-[#121212] p-6 overflow-y-auto">
+            <div className="w-80 bg-[#121212] p-6 h-full overflow-y-auto sticky top-0">
               <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-6">
                 {selectedIssue ? "Issue Details" : "Inspector"}
               </div>
 
-              {!selectedIssue && status === "complete" && (
-                <div className="text-xs text-gray-600 text-center py-12">
-                  Click on an issue in the document to view details
+              {!selectedIssue && status === "complete" && metrics && (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center space-y-3">
+                    <div className="w-12 h-12 mx-auto bg-blue-500/10 rounded-full flex items-center justify-center">
+                      <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      </svg>
+                    </div>
+                    <div className="text-[13px] text-gray-400 leading-relaxed">
+                      Reviewing <span className="text-white font-semibold">{metrics.total}</span> flags
+                    </div>
+                  </div>
                 </div>
               )}
 
               {selectedIssue && (
-                <div className="space-y-6">
-                  <div className="bg-[#1E1E1E] rounded-lg p-4">
-                    <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Source Material</div>
-                    <div className="text-xs text-gray-400 leading-relaxed">
-                      {selectedIssue.quote}
+                <div className="space-y-5">
+                  {/* Issue Type Badge */}
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[9px] px-2 py-1 rounded uppercase font-semibold tracking-wider ${
+                      selectedIssueType === 'critical' 
+                        ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                        : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                    }`}>
+                      {selectedIssueType === 'critical' ? 'Bad Law' : 'Hallucination'}
+                    </span>
+                  </div>
+
+                  {/* Document Quote Card */}
+                  <div className="bg-[#1E1E1E] rounded-lg p-4 border border-gray-800">
+                    <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-3">Document Quote</div>
+                    <div className="text-[12px] text-gray-300 leading-relaxed font-mono italic">
+                      "{selectedIssue.quote}"
                     </div>
                   </div>
 
-                  <div className="bg-[#1E1E1E] rounded-lg p-4">
-                    <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Analysis</div>
-                    <div className="text-xs text-gray-300 leading-relaxed">
+                  {/* Problem Analysis Card */}
+                  <div className="bg-[#1E1E1E] rounded-lg p-4 border border-gray-800">
+                    <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-3">
+                      {selectedIssue.problem ? 'Problem' : 'Pattern'}
+                    </div>
+                    <div className="text-[13px] text-gray-200 leading-relaxed">
                       {selectedIssue.problem || selectedIssue.pattern}
                     </div>
                   </div>
 
-                  {/* Feedback */}
-                  <div className="bg-[#1E1E1E] rounded-lg p-4">
+                  {/* Additional Details Card */}
+                  {(selectedIssue.missingAuthority || selectedIssue.risk) && (
+                    <div className="bg-[#1E1E1E] rounded-lg p-4 border border-gray-800">
+                      <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-3">
+                        {selectedIssue.missingAuthority ? 'Missing Authority' : 'Risk Assessment'}
+                      </div>
+                      <div className="text-[13px] text-gray-300 leading-relaxed">
+                        {selectedIssue.missingAuthority || selectedIssue.risk}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Action Buttons Card */}
+                  <div className="bg-[#1E1E1E] rounded-lg p-4 border border-gray-800">
+                    <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-3">Next Steps</div>
+                    <div className="space-y-2">
+                      <button className="w-full py-2.5 px-3 bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium rounded transition-all flex items-center justify-center gap-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Verify on Westlaw/Lexis
+                      </button>
+                      <button className="w-full py-2.5 px-3 bg-[#2A2A2A] hover:bg-[#353535] border border-gray-700 text-xs text-gray-300 font-medium rounded transition-all flex items-center justify-center gap-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Suggest Correction
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Feedback Card */}
+                  <div className="bg-[#1E1E1E] rounded-lg p-4 border border-gray-800">
                     <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-3">Was this helpful?</div>
                     <div className="flex gap-2">
-                      <button className="flex-1 py-2 px-3 bg-[#2A2A2A] hover:bg-green-900/20 hover:border-green-500 border border-transparent text-xs text-gray-400 hover:text-green-400 rounded transition-all flex items-center justify-center gap-2">
+                      <button className="flex-1 py-2.5 px-3 bg-[#2A2A2A] hover:bg-green-900/20 hover:border-green-500 border border-gray-700 text-xs text-gray-400 hover:text-green-400 rounded transition-all flex items-center justify-center gap-2">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
                         </svg>
                         Yes
                       </button>
-                      <button className="flex-1 py-2 px-3 bg-[#2A2A2A] hover:bg-red-900/20 hover:border-red-500 border border-transparent text-xs text-gray-400 hover:text-red-400 rounded transition-all flex items-center justify-center gap-2">
+                      <button className="flex-1 py-2.5 px-3 bg-[#2A2A2A] hover:bg-red-900/20 hover:border-red-500 border border-gray-700 text-xs text-gray-400 hover:text-red-400 rounded transition-all flex items-center justify-center gap-2">
                         <svg className="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
                         </svg>
@@ -518,8 +774,8 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Footer */}
-          <div className="py-4 bg-[#0F0F0F] border-t border-gray-900">
+          {/* Footer - Fixed at bottom */}
+          <div className="flex-shrink-0 py-3 bg-[#0F0F0F] border-t border-gray-900">
             <p className="text-[10px] text-gray-600 flex items-center justify-center gap-4">
               <span className="flex items-center gap-1.5">
                 <svg className="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
