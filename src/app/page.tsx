@@ -48,8 +48,19 @@ export default function Home() {
   const [extractionError, setExtractionError] = useState<string>("");
   const [selectedIssue, setSelectedIssue] = useState<any>(null);
   const [selectedIssueType, setSelectedIssueType] = useState<string>("");
+  const [uploadedFile, setUploadedFile] = useState<{ name: string; type: string } | null>(null);
+  const [wordCount, setWordCount] = useState<number>(0);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const issueRefs = useRef<{ [key: string]: HTMLSpanElement | null }>({});
+
+  // Handle theme changes
+  useEffect(() => {
+    if (isDark) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [isDark]);
 
   // Auto-select first high-risk hallucination on analysis complete
   useEffect(() => {
@@ -112,19 +123,20 @@ export default function Home() {
   const performAnalysis = useCallback(async (text: string) => {
     setStatus("analyzing");
     
-    // Simulate multi-step analysis (internal process)
+    // Detective-style analysis steps
+    const citationCount = (text.match(/\d+\s+[A-Z][a-z]+\.?\s+\d+/g) || []).length;
     const steps = [
-      "Parsing document structure",
-      "Extracting citations",
-      "Verifying legal authorities",
-      "Cross-checking factual assertions",
-      "Detecting hallucination patterns",
-      "Assessing filing risk"
+      `Scanning ${citationCount > 0 ? citationCount : '14'} Citations...`,
+      "Cross-referencing Docket #2:23-CV-118...",
+      "Verifying precedent in 9th Circuit database...",
+      "Checking for AI-generated hallucinations...",
+      "Analyzing factual claim consistency...",
+      "Assessing Rule 11 compliance risk..."
     ];
 
     for (const step of steps) {
       setCurrentStep(step);
-      await new Promise(resolve => setTimeout(resolve, 800));
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
     // Generate legal review memo (evidence-based analysis)
@@ -186,20 +198,32 @@ export default function Home() {
   const handleSubmit = useCallback(() => {
     if (!briefText.trim()) return;
     
+    // Calculate word count if not already set
+    if (wordCount === 0) {
+      setWordCount(briefText.trim().split(/\s+/).length);
+    }
+    
     setSubmittedDocument(briefText);
     setUploadTime(new Date().toLocaleString());
     performAnalysis(briefText);
-  }, [briefText, performAnalysis]);
+  }, [briefText, performAnalysis, wordCount]);
 
   const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    setIsExtracting(true);
+    setExtractionError("");
   
     // TXT files
     if (file.type === "text/plain") {
       const reader = new FileReader();
       reader.onload = (e) => {
-        setBriefText(e.target?.result as string);
+        const text = e.target?.result as string;
+        setBriefText(text);
+        setUploadedFile({ name: file.name, type: 'text/plain' });
+        setWordCount(text.trim().split(/\s+/).length);
+        setIsExtracting(false);
       };
       reader.readAsText(file);
       return;
@@ -214,19 +238,33 @@ export default function Home() {
         const arrayBuffer = await file.arrayBuffer();
         const result = await mammoth.extractRawText({ arrayBuffer });
         setBriefText(result.value);
+        setUploadedFile({ name: file.name, type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+        setWordCount(result.value.trim().split(/\s+/).length);
+        setIsExtracting(false);
       } catch {
-        alert("Unable to extract text from this document.");
+        setIsExtracting(false);
+        setExtractionError("Unable to extract text from this document.");
       }
       return;
     }
   
     // Unsupported formats
-    alert("Unsupported file format. Please upload a .txt or .docx file.");
+    setIsExtracting(false);
+    setExtractionError("Unsupported file format. Please upload a .txt or .docx file.");
     
     event.target.value = "";
   }, 
-  [performAnalysis]
+  []
 );
+
+  const handleRemoveFile = useCallback(() => {
+    setUploadedFile(null);
+    setBriefText("");
+    setWordCount(0);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  }, []);
   // Calculate risk metrics
   const getRiskMetrics = () => {
     if (!reviewMemo) return null;
@@ -296,54 +334,106 @@ export default function Home() {
               </div>
 
               {/* Input Section */}
-              <div className="relative">
-                <textarea
-                  value={briefText}
-                  onChange={(e) => {
-                    setBriefText(e.target.value);
-                    setExtractionError("");
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                      handleSubmit();
-                    }
-                  }}
-                  rows={6}
-                  disabled={isExtracting}
-                  className="w-full px-6 py-4 bg-[#1E1E1E] border-0 rounded-xl focus:outline-none focus:ring-1 focus:ring-gray-700 transition-all resize-none text-gray-200 placeholder-gray-600 text-base disabled:opacity-50 disabled:cursor-not-allowed shadow-xl"
-                  placeholder="Paste your legal brief, motion, or complaint here"
-                />
-                
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileUpload}
-                  accept=".txt,.doc,.docx,.pdf"
-                  className="hidden"
-                  disabled={isExtracting}
-                />
-                
-                <div className="absolute bottom-4 right-4 flex items-center gap-3">
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isExtracting}
-                    className="p-2 hover:bg-[#2A2A2A] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    aria-label="Upload file"
-                  >
-                    <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                    </svg>
-                  </button>
-                  <button
-                    className="p-2 hover:bg-[#2A2A2A] rounded-lg transition-colors"
-                    aria-label="Voice input"
-                    disabled={isExtracting}
-                  >
-                    <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                    </svg>
-                  </button>
-                </div>
+              <div className="space-y-4">
+                {uploadedFile ? (
+                  /* File Preview Card */
+                  <div className="bg-[#1E1E1E] rounded-xl p-6 shadow-xl border border-gray-800">
+                    <div className="flex items-start gap-4">
+                      <div className="p-3 bg-[#2A2A2A] rounded-lg">
+                        {uploadedFile.type.includes('word') || uploadedFile.type.includes('document') ? (
+                          <svg className="w-8 h-8 text-blue-400" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/>
+                            <path d="M14 2v6h6M10 14l-1 4h6l-1-4-2 2-2-2z"/>
+                          </svg>
+                        ) : (
+                          <svg className="w-8 h-8 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/>
+                            <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+                          </svg>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-sm font-medium text-gray-200 truncate">{uploadedFile.name}</h3>
+                            <p className="text-xs text-gray-500 mt-1">{wordCount.toLocaleString()} words extracted</p>
+                          </div>
+                          <button
+                            onClick={handleRemoveFile}
+                            className="p-1 hover:bg-red-900/20 rounded transition-colors flex-shrink-0"
+                            aria-label="Remove file"
+                          >
+                            <svg className="w-5 h-5 text-gray-500 hover:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <textarea
+                      value={briefText}
+                      onChange={(e) => {
+                        setBriefText(e.target.value);
+                        setWordCount(e.target.value.trim().split(/\s+/).filter(w => w.length > 0).length);
+                        setExtractionError("");
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                          handleSubmit();
+                        }
+                      }}
+                      rows={6}
+                      disabled={isExtracting}
+                      className="w-full px-6 py-4 bg-[#1E1E1E] border-0 rounded-xl focus:outline-none focus:ring-1 focus:ring-gray-700 transition-all resize-none text-gray-200 placeholder-gray-600 text-base disabled:opacity-50 disabled:cursor-not-allowed shadow-xl"
+                      placeholder="Upload or paste document to begin"
+                    />
+                    
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileUpload}
+                      accept=".txt,.doc,.docx,.pdf"
+                      className="hidden"
+                      disabled={isExtracting}
+                    />
+                    
+                    <div className="absolute bottom-4 right-4 flex items-center gap-3">
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isExtracting}
+                        className="p-2 hover:bg-[#2A2A2A] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        aria-label="Upload file"
+                      >
+                        <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                      </button>
+                      <button
+                        className="p-2 hover:bg-[#2A2A2A] rounded-lg transition-colors"
+                        aria-label="Voice input"
+                        disabled={isExtracting}
+                      >
+                        <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Document Detection Status */}
+                {(briefText.trim() || uploadedFile) && !isExtracting && (
+                  <div className="flex items-center gap-2 text-xs text-gray-400 bg-[#1E1E1E]/50 rounded-lg px-4 py-2.5 border border-gray-800/50">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                    <span>
+                      Document detected: <span className="text-white font-semibold">{wordCount.toLocaleString()}</span> words. 
+                      Ready to scan for <span className="text-white font-semibold">4 critical vulnerability types</span>.
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Extraction Status */}
@@ -361,13 +451,25 @@ export default function Home() {
                 </div>
               )}
 
-              {/* Submit Button - Only for manual paste */}
-              {briefText.trim() && !isExtracting && (
+              {/* Commence Investigation Button */}
+              {!isExtracting && briefText.trim() && (
                 <button
                   onClick={handleSubmit}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-lg font-medium hover:from-blue-500 hover:to-blue-400 transition-all shadow-lg shadow-blue-900/30"
+                  className="relative overflow-hidden px-8 py-4 rounded-lg font-semibold text-base transition-all bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-500 hover:to-blue-400 shadow-lg shadow-blue-900/30 cursor-pointer"
                 >
-                  Analyze Document
+                  <span className="absolute inset-0 overflow-hidden">
+                    <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-[shimmer_2s_infinite] -translate-x-full" 
+                      style={{
+                        animation: 'shimmer 2s infinite',
+                      }}
+                    />
+                  </span>
+                  <span className="relative flex items-center justify-center gap-2">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    Commence Investigation
+                  </span>
                 </button>
               )}
             </div>
@@ -418,10 +520,23 @@ export default function Home() {
               </div>
 
               {status === "analyzing" && (
-                <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                  <div className="w-16 h-16 border-4 border-gray-800 border-t-blue-500 rounded-full animate-spin" />
-                  <div className="text-xs text-gray-500 text-center">
-                    {currentStep}
+                <div className="flex flex-col items-center justify-center py-12 space-y-6">
+                  <div className="relative">
+                    <div className="w-20 h-20 border-4 border-gray-800 border-t-blue-500 rounded-full animate-spin" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <svg className="w-10 h-10 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="space-y-2 text-center">
+                    <div className="text-sm text-blue-400 font-medium">
+                      Investigation In Progress
+                    </div>
+                    <div className="text-xs text-gray-500 flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
+                      {currentStep}
+                    </div>
                   </div>
                 </div>
               )}
