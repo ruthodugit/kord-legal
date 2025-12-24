@@ -38,7 +38,6 @@ interface LegalReviewMemo {
 
 export default function Home() {
   const [briefText, setBriefText] = useState("");
-  const [isDark, setIsDark] = useState(true);
   const [status, setStatus] = useState<AnalysisStatus>("idle");
   const [currentStep, setCurrentStep] = useState("");
   const [reviewMemo, setReviewMemo] = useState<LegalReviewMemo | null>(null);
@@ -46,20 +45,9 @@ export default function Home() {
   const [uploadTime, setUploadTime] = useState<string>("");
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractionError, setExtractionError] = useState<string>("");
+  const [selectedIssue, setSelectedIssue] = useState<any>(null);
+  const [hoveredIssue, setHoveredIssue] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-
-  useEffect(() => {
-    const isDarkMode = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    setIsDark(isDarkMode);
-  }, []);
-
-  useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [isDark]);
 
   const performAnalysis = useCallback(async (text: string) => {
     setStatus("analyzing");
@@ -174,38 +162,35 @@ export default function Home() {
   
     // Unsupported formats
     alert("Unsupported file format. Please upload a .txt or .docx file.");
-
-    reader.onerror = () => {
-      setIsExtracting(false);
-      setExtractionError("Error reading file. Please try again.");
-    };
-
-    reader.readAsText(file);
     
     event.target.value = "";
   }, 
   [performAnalysis]
 );
+  // Calculate risk metrics
+  const getRiskMetrics = () => {
+    if (!reviewMemo) return null;
+    
+    const hallucinations = reviewMemo.hallucinationSignals.length;
+    const badLaw = reviewMemo.criticalIssues.length;
+    const formatting = reviewMemo.opposingCounselPerspective.length;
+    const total = hallucinations + badLaw + formatting;
+    const maxScore = 100;
+    const riskScore = Math.max(0, maxScore - (total * 10));
+    
+    return {
+      score: riskScore,
+      hallucinations,
+      badLaw,
+      formatting,
+      total
+    };
+  };
+
+  const metrics = getRiskMetrics();
+
   return (
-    <main className="min-h-screen bg-white dark:bg-black transition-colors duration-200">
-      {/* Theme Toggle Button */}
-      <div className="fixed top-6 right-6 z-50">
-        <button
-          onClick={() => setIsDark(!isDark)}
-          className="p-2.5 rounded-lg bg-gray-100 dark:bg-zinc-900 hover:bg-gray-200 dark:hover:bg-zinc-800 transition-colors border border-gray-200 dark:border-zinc-800"
-          aria-label="Toggle theme"
-        >
-          {isDark ? (
-            <svg className="w-4 h-4 text-zinc-400" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
-            </svg>
-          ) : (
-            <svg className="w-4 h-4 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
-            </svg>
-          )}
-        </button>
-      </div>
+    <main className="min-h-screen bg-[#0A0A0A] transition-colors duration-200">
 
       {/* Pre-Upload State: Landing Page */}
       {!submittedDocument ? (
@@ -214,15 +199,15 @@ export default function Home() {
             <div className="w-full max-w-3xl mx-auto text-center space-y-8">
               {/* Header Section */}
               <div className="space-y-6">
-                <div className="text-xs tracking-[0.3em] text-gray-400 dark:text-zinc-500 uppercase font-medium">
+                <div className="text-xs tracking-[0.3em] text-gray-500 uppercase font-medium">
                   KORD LEGAL
                 </div>
                 
-                <h1 className="text-5xl md:text-6xl font-bold text-gray-900 dark:text-white leading-tight">
+                <h1 className="text-5xl md:text-6xl font-bold text-white leading-tight">
                   AI Legal Brief Investigator
                 </h1>
                 
-                <p className="text-base md:text-lg text-gray-500 dark:text-zinc-400 leading-relaxed max-w-2xl mx-auto">
+                <p className="text-base md:text-lg text-gray-400 leading-relaxed max-w-2xl mx-auto">
                   Upload a legal brief or motion. Kord investigates every citation, claim, and argument to uncover AI hallucinations, misused precedent, and vulnerabilities that could trigger sanctions
                 </p>
               </div>
@@ -242,7 +227,7 @@ export default function Home() {
                   }}
                   rows={6}
                   disabled={isExtracting}
-                  className="w-full px-6 py-4 bg-white dark:bg-zinc-900/50 border border-gray-200 dark:border-zinc-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-zinc-700 transition-all resize-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-600 text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-6 py-4 bg-[#1E1E1E] border-0 rounded-xl focus:outline-none focus:ring-1 focus:ring-gray-700 transition-all resize-none text-gray-200 placeholder-gray-600 text-base disabled:opacity-50 disabled:cursor-not-allowed shadow-xl"
                   placeholder="Paste your legal brief, motion, or complaint here"
                 />
                 
@@ -259,19 +244,19 @@ export default function Home() {
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isExtracting}
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="p-2 hover:bg-[#2A2A2A] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     aria-label="Upload file"
                   >
-                    <svg className="w-5 h-5 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                     </svg>
                   </button>
                   <button
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+                    className="p-2 hover:bg-[#2A2A2A] rounded-lg transition-colors"
                     aria-label="Voice input"
                     disabled={isExtracting}
                   >
-                    <svg className="w-5 h-5 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                     </svg>
                   </button>
@@ -280,15 +265,15 @@ export default function Home() {
 
               {/* Extraction Status */}
               {isExtracting && (
-                <div className="text-sm text-gray-500 dark:text-zinc-500 flex items-center justify-center gap-2">
-                  <div className="w-1.5 h-1.5 bg-gray-400 dark:bg-zinc-600 rounded-full animate-pulse" />
+                <div className="text-sm text-gray-500 flex items-center justify-center gap-2">
+                  <div className="w-1.5 h-1.5 bg-gray-600 rounded-full animate-pulse" />
                   Extracting document text
                 </div>
               )}
 
               {/* Extraction Error */}
               {extractionError && (
-                <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3">
+                <div className="text-sm text-red-400 bg-red-950/30 border-0 rounded-lg px-4 py-3">
                   {extractionError}
                 </div>
               )}
@@ -297,7 +282,7 @@ export default function Home() {
               {briefText.trim() && !isExtracting && (
                 <button
                   onClick={handleSubmit}
-                  className="px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-black rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-lg font-medium hover:from-blue-500 hover:to-blue-400 transition-all shadow-lg shadow-blue-900/30"
                 >
                   Analyze Document
                 </button>
@@ -307,199 +292,248 @@ export default function Home() {
 
           {/* Footer */}
           <div className="pb-6 text-center">
-            <p className="text-xs text-gray-500 dark:text-zinc-500">
-              SOC2 Compliant. Documents are encrypted and never used for training
+            <p className="text-xs text-gray-600 flex items-center justify-center gap-3">
+              <span className="flex items-center gap-1.5">
+                <svg className="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                SOC2 Compliant
+              </span>
+              <span className="text-gray-700">|</span>
+              <span className="flex items-center gap-1.5">
+                <svg className="w-3 h-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                End-to-End Encrypted
+              </span>
             </p>
           </div>
         </div>
       ) : (
-        /* Post-Upload State: Two-Panel Review Interface */
-        <div className="min-h-screen flex flex-col px-4 py-8">
-          <div className="flex-1 w-full max-w-7xl mx-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Left Panel: Document */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-xs text-gray-500 dark:text-zinc-500 uppercase tracking-wide">
-                      Document
-                    </div>
-                    <div className="text-xs text-gray-400 dark:text-zinc-600 mt-1">
-                      Uploaded {uploadTime}
+        /* Post-Upload State: 3-Panel Dashboard */
+        <div className="min-h-screen flex flex-col">
+          <div className="flex-1 flex overflow-hidden">
+            {/* Left Sidebar: Summary & Risk Score */}
+            <div className="w-72 bg-[#121212] p-6 overflow-y-auto flex flex-col gap-6">
+              {/* Header */}
+              <div>
+                <button
+                  onClick={() => {
+                    setSubmittedDocument(null);
+                    setBriefText("");
+                    setStatus("idle");
+                    setReviewMemo(null);
+                    setSelectedIssue(null);
+                  }}
+                  className="text-[10px] text-gray-500 hover:text-gray-400 transition-colors uppercase tracking-wider"
+                >
+                  ← New Analysis
+                </button>
+                <div className="text-[9px] text-gray-600 mt-2 uppercase tracking-wide">
+                  {uploadTime}
+                </div>
+              </div>
+
+              {status === "analyzing" && (
+                <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                  <div className="w-16 h-16 border-4 border-gray-800 border-t-blue-500 rounded-full animate-spin" />
+                  <div className="text-xs text-gray-500 text-center">
+                    {currentStep}
+                  </div>
+                </div>
+              )}
+
+              {status === "complete" && metrics && (
+                <>
+                  {/* Risk Score */}
+                  <div className="bg-[#1E1E1E] rounded-lg p-6 space-y-4">
+                    <div className="text-[10px] text-gray-500 uppercase tracking-wider">Risk Score</div>
+                    <div className="relative">
+                      <svg className="w-32 h-32 mx-auto transform -rotate-90">
+                        <circle
+                          cx="64"
+                          cy="64"
+                          r="56"
+                          stroke="#2A2A2A"
+                          strokeWidth="10"
+                          fill="none"
+                        />
+                        <circle
+                          cx="64"
+                          cy="64"
+                          r="56"
+                          stroke={metrics.score >= 70 ? "#10b981" : metrics.score >= 40 ? "#f59e0b" : "#ef4444"}
+                          strokeWidth="10"
+                          fill="none"
+                          strokeDasharray={`${(metrics.score / 100) * 351.86} 351.86`}
+                          strokeLinecap="round"
+                          style={{
+                            filter: `drop-shadow(0 0 8px ${metrics.score >= 70 ? "#10b98144" : metrics.score >= 40 ? "#f59e0b44" : "#ef444444"})`
+                          }}
+                        />
+                      </svg>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="text-center">
+                          <div className="text-4xl font-bold text-white">{metrics.score}</div>
+                          <div className="text-[10px] text-gray-500">/ 100</div>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <button
-                    onClick={() => {
-                      setSubmittedDocument(null);
-                      setBriefText("");
-                      setStatus("idle");
-                      setReviewMemo(null);
-                    }}
-                    className="text-xs text-gray-500 dark:text-zinc-500 hover:text-gray-700 dark:hover:text-zinc-400 transition-colors"
-                  >
-                    New Document
-                  </button>
-                </div>
-                
-                <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg p-6 h-[calc(100vh-12rem)] overflow-y-auto">
-                  <pre className="text-sm text-gray-700 dark:text-zinc-300 whitespace-pre-wrap font-mono leading-relaxed">
-                    {submittedDocument}
-                  </pre>
-                </div>
-              </div>
 
-              {/* Right Panel: Process/Results */}
-              <div className="space-y-4">
-                <div className="text-xs text-gray-500 dark:text-zinc-500 uppercase tracking-wide">
-                  {status === "analyzing" ? "Analysis In Progress" : status === "complete" ? "Review Complete" : ""}
-                </div>
-
-                <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg p-6 h-[calc(100vh-12rem)] overflow-y-auto">
-                  {status === "analyzing" && (
-                    <div className="space-y-3 font-mono text-sm">
-                      <div className="text-gray-500 dark:text-zinc-500">
-                        <span className="text-gray-400 dark:text-zinc-600">[SYSTEM]</span> Analysis initiated
+                  {/* Category Breakdown */}
+                  <div className="bg-[#1E1E1E] rounded-lg p-5 space-y-4">
+                    <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-3">Issue Breakdown</div>
+                    
+                    {/* Hallucinations */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-400">Hallucinations</span>
+                        <span className="text-xs font-medium text-red-400">{metrics.hallucinations}</span>
                       </div>
-                      <div className="text-gray-700 dark:text-zinc-300">
-                        <span className="text-gray-400 dark:text-zinc-600">[PROC]</span> {currentStep}
-                      </div>
-                      <div className="flex items-center gap-2 text-gray-500 dark:text-zinc-500">
-                        <div className="w-1.5 h-1.5 bg-gray-400 dark:bg-zinc-600 rounded-full animate-pulse" />
-                        Processing...
+                      <div className="h-1.5 bg-[#2A2A2A] rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-gradient-to-r from-red-600 to-red-500 rounded-full transition-all duration-500"
+                          style={{ width: `${Math.min((metrics.hallucinations / 5) * 100, 100)}%` }}
+                        />
                       </div>
                     </div>
-                  )}
 
-                  {status === "complete" && reviewMemo && (
-                    <div className="space-y-8 text-sm">
-                      {/* Filing Readiness Verdict */}
-                      <div>
-                        <div className="flex items-center gap-2 mb-3">
-                          <h2 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wide">
-                            Filing Readiness
-                          </h2>
-                          <span className={`text-xs px-2.5 py-1 rounded font-bold uppercase tracking-wide ${
-                            reviewMemo.filingVerdict.readiness === 'do_not_file' 
-                              ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                              : reviewMemo.filingVerdict.readiness === 'file_with_caution'
-                              ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'
-                              : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                          }`}>
-                            {reviewMemo.filingVerdict.readiness.replace(/_/g, ' ')}
-                          </span>
-                        </div>
-                        <ul className="space-y-1.5 text-gray-700 dark:text-zinc-300">
-                          {reviewMemo.filingVerdict.justification.map((bullet, idx) => (
-                            <li key={idx} className="flex gap-2">
-                              <span className="text-gray-400 dark:text-zinc-500">•</span>
-                              <span>{bullet}</span>
-                            </li>
-                          ))}
-                        </ul>
+                    {/* Bad Law */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-400">Bad Law</span>
+                        <span className="text-xs font-medium text-orange-400">{metrics.badLaw}</span>
                       </div>
-
-                      {/* Critical Issues */}
-                      {reviewMemo.criticalIssues.length > 0 && (
-                        <div>
-                          <h2 className="text-sm font-bold text-red-600 dark:text-red-400 mb-4 uppercase tracking-wide">
-                            Critical Issues
-                          </h2>
-                          <div className="space-y-5">
-                            {reviewMemo.criticalIssues.map((issue, idx) => (
-                              <div key={idx} className="space-y-3">
-                                <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900/30 rounded p-3">
-                                  <div className="text-xs text-red-600 dark:text-red-400 font-semibold mb-1.5">DOCUMENT QUOTE</div>
-                                  <div className="font-mono text-xs text-gray-900 dark:text-white italic">
-                                    "{issue.quote}"
-                                  </div>
-                                </div>
-                                <div className="pl-3 border-l-2 border-red-500">
-                                  <div className="text-xs text-red-600 dark:text-red-400 font-semibold mb-1">PROBLEM</div>
-                                  <div className="text-gray-900 dark:text-white mb-3">{issue.problem}</div>
-                                  <div className="text-xs text-red-600 dark:text-red-400 font-semibold mb-1">MISSING AUTHORITY</div>
-                                  <div className="text-gray-700 dark:text-zinc-300">{issue.missingAuthority}</div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Hallucination Risk Signals */}
-                      {reviewMemo.hallucinationSignals.length > 0 && (
-                        <div>
-                          <h2 className="text-sm font-bold text-orange-600 dark:text-orange-400 mb-4 uppercase tracking-wide">
-                            Hallucination Risk Signals
-                          </h2>
-                          <div className="space-y-4">
-                            {reviewMemo.hallucinationSignals.map((signal, idx) => (
-                              <div key={idx} className="space-y-2">
-                                <div className="bg-orange-50 dark:bg-orange-900/10 border border-orange-200 dark:border-orange-900/30 rounded p-3">
-                                  <div className="font-mono text-xs text-gray-900 dark:text-white italic">
-                                    "{signal.quote}"
-                                  </div>
-                                </div>
-                                <div className="pl-3 border-l-2 border-orange-500 space-y-2">
-                                  <div>
-                                    <div className="text-xs text-orange-600 dark:text-orange-400 font-semibold mb-1">PATTERN</div>
-                                    <div className="text-gray-900 dark:text-white text-xs">{signal.pattern}</div>
-                                  </div>
-                                  <div>
-                                    <div className="text-xs text-orange-600 dark:text-orange-400 font-semibold mb-1">RISK</div>
-                                    <div className="text-gray-700 dark:text-zinc-300 text-xs">{signal.risk}</div>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Opposing Counsel Perspective */}
-                      {reviewMemo.opposingCounselPerspective.length > 0 && (
-                        <div>
-                          <h2 className="text-sm font-bold text-purple-600 dark:text-purple-400 mb-4 uppercase tracking-wide">
-                            Opposing Counsel Perspective
-                          </h2>
-                          <div className="space-y-4">
-                            {reviewMemo.opposingCounselPerspective.map((attack, idx) => (
-                              <div key={idx} className="border-l-2 border-purple-500 pl-4 space-y-2">
-                                <div>
-                                  <div className="text-xs text-purple-600 dark:text-purple-400 font-semibold mb-1">VULNERABILITY</div>
-                                  <div className="text-gray-900 dark:text-white text-xs">{attack.vulnerability}</div>
-                                </div>
-                                <div>
-                                  <div className="text-xs text-purple-600 dark:text-purple-400 font-semibold mb-1">LIKELY CHALLENGE</div>
-                                  <div className="text-gray-700 dark:text-zinc-300 text-xs">{attack.likelyChallenge}</div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Jurisdiction Notes */}
-                      {reviewMemo.jurisdictionNotes && (
-                        <div>
-                          <h2 className="text-sm font-bold text-blue-600 dark:text-blue-400 mb-3 uppercase tracking-wide">
-                            Jurisdiction & Filing Standards
-                          </h2>
-                          <div className="border-l-2 border-blue-500 pl-4 text-gray-700 dark:text-zinc-300 text-xs leading-relaxed">
-                            {reviewMemo.jurisdictionNotes}
-                          </div>
-                        </div>
-                      )}
+                      <div className="h-1.5 bg-[#2A2A2A] rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-gradient-to-r from-orange-600 to-orange-500 rounded-full transition-all duration-500"
+                          style={{ width: `${Math.min((metrics.badLaw / 5) * 100, 100)}%` }}
+                        />
+                      </div>
                     </div>
-                  )}
-                </div>
+
+                    {/* Formatting */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-400">Formatting</span>
+                        <span className="text-xs font-medium text-yellow-400">{metrics.formatting}</span>
+                      </div>
+                      <div className="h-1.5 bg-[#2A2A2A] rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-gradient-to-r from-yellow-600 to-yellow-500 rounded-full transition-all duration-500"
+                          style={{ width: `${Math.min((metrics.formatting / 5) * 100, 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Quick Actions */}
+                  <div className="bg-[#1E1E1E] rounded-lg p-5 space-y-3">
+                    <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Quick Actions</div>
+                    <button className="w-full py-2 px-3 bg-[#2A2A2A] hover:bg-[#353535] text-xs text-gray-300 rounded transition-colors text-left">
+                      Export Report
+                    </button>
+                    <button className="w-full py-2 px-3 bg-[#2A2A2A] hover:bg-[#353535] text-xs text-gray-300 rounded transition-colors text-left">
+                      Share Review
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Center Panel: Document Viewer */}
+            <div className="flex-1 bg-[#1A1A1A] overflow-y-auto relative">
+              {/* Heatmap Scrollbar */}
+              <div className="absolute right-0 top-0 bottom-0 w-2 bg-[#0F0F0F]">
+                {status === "complete" && reviewMemo && (
+                  <>
+                    {/* Simulate error density markers */}
+                    <div className="absolute top-[10%] left-0 right-0 h-8 bg-red-500/30" />
+                    <div className="absolute top-[35%] left-0 right-0 h-12 bg-red-500/40" />
+                    <div className="absolute top-[60%] left-0 right-0 h-6 bg-yellow-500/30" />
+                  </>
+                )}
               </div>
+
+              <div className="max-w-4xl mx-auto px-12 py-16">
+                <pre 
+                  className="text-[15px] text-gray-300 whitespace-pre-wrap leading-[1.9] font-light"
+                  style={{ fontFamily: 'Baskerville, "Libre Baskerville", serif' }}
+                >
+                  {submittedDocument}
+                </pre>
+              </div>
+            </div>
+
+            {/* Right Panel: Inspector */}
+            <div className="w-80 bg-[#121212] p-6 overflow-y-auto">
+              <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-6">
+                {selectedIssue ? "Issue Details" : "Inspector"}
+              </div>
+
+              {!selectedIssue && status === "complete" && (
+                <div className="text-xs text-gray-600 text-center py-12">
+                  Click on an issue in the document to view details
+                </div>
+              )}
+
+              {selectedIssue && (
+                <div className="space-y-6">
+                  <div className="bg-[#1E1E1E] rounded-lg p-4">
+                    <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Source Material</div>
+                    <div className="text-xs text-gray-400 leading-relaxed">
+                      {selectedIssue.quote}
+                    </div>
+                  </div>
+
+                  <div className="bg-[#1E1E1E] rounded-lg p-4">
+                    <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Analysis</div>
+                    <div className="text-xs text-gray-300 leading-relaxed">
+                      {selectedIssue.problem || selectedIssue.pattern}
+                    </div>
+                  </div>
+
+                  {/* Feedback */}
+                  <div className="bg-[#1E1E1E] rounded-lg p-4">
+                    <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-3">Was this helpful?</div>
+                    <div className="flex gap-2">
+                      <button className="flex-1 py-2 px-3 bg-[#2A2A2A] hover:bg-green-900/20 hover:border-green-500 border border-transparent text-xs text-gray-400 hover:text-green-400 rounded transition-all flex items-center justify-center gap-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+                        </svg>
+                        Yes
+                      </button>
+                      <button className="flex-1 py-2 px-3 bg-[#2A2A2A] hover:bg-red-900/20 hover:border-red-500 border border-transparent text-xs text-gray-400 hover:text-red-400 rounded transition-all flex items-center justify-center gap-2">
+                        <svg className="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+                        </svg>
+                        No
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
             </div>
           </div>
 
           {/* Footer */}
-          <div className="pt-6 text-center">
-            <p className="text-xs text-gray-500 dark:text-zinc-500">
-              SOC2 Compliant. Documents are encrypted and never used for training
+          <div className="py-4 bg-[#0F0F0F] border-t border-gray-900">
+            <p className="text-[10px] text-gray-600 flex items-center justify-center gap-4">
+              <span className="flex items-center gap-1.5">
+                <svg className="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                SOC2 Compliant
+              </span>
+              <span className="text-gray-800">|</span>
+              <span className="flex items-center gap-1.5">
+                <svg className="w-3 h-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                End-to-End Encrypted
+              </span>
             </p>
           </div>
         </div>
