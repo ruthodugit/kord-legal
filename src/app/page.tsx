@@ -48,6 +48,8 @@ export default function Home() {
   const [extractionError, setExtractionError] = useState<string>("");
   const [selectedIssue, setSelectedIssue] = useState<any>(null);
   const [selectedIssueType, setSelectedIssueType] = useState<string>("");
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [expandedIssueId, setExpandedIssueId] = useState<string | null>(null);
   const [uploadedFile, setUploadedFile] = useState<{ name: string; type: string } | null>(null);
   const [wordCount, setWordCount] = useState<number>(0);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -62,24 +64,20 @@ export default function Home() {
     }
   }, [isDark]);
 
-  // Auto-select first high-risk hallucination on analysis complete
+  // Auto-select first high-risk category on analysis complete
   useEffect(() => {
-    if (status === "complete" && reviewMemo && !selectedIssue) {
-      // Prioritize hallucinations (highest risk) first
+    if (status === "complete" && reviewMemo && !selectedCategory && !selectedIssue) {
+      // Automatically select hallucinations category to show the list
       if (reviewMemo.hallucinationSignals.length > 0) {
-        const firstHallucination = reviewMemo.hallucinationSignals[0];
-        setSelectedIssue(firstHallucination);
-        setSelectedIssueType("hallucination");
+        setSelectedCategory('hallucinations');
         
-        // Scroll to issue in document with delay to ensure rendering
+        // Scroll to first hallucination in document
         setTimeout(() => {
           const issueKey = `hallucination-0`;
           const element = issueRefs.current[issueKey];
           if (element) {
-            // Get the document viewer container
             const viewer = document.getElementById('document-viewer');
             if (viewer) {
-              // Calculate the position to center the element
               const elementTop = element.offsetTop;
               const viewerHeight = viewer.clientHeight;
               const elementHeight = element.clientHeight;
@@ -93,10 +91,8 @@ export default function Home() {
           }
         }, 300);
       } else if (reviewMemo.criticalIssues.length > 0) {
-        // Fall back to critical issues if no hallucinations
-        const firstIssue = reviewMemo.criticalIssues[0];
-        setSelectedIssue(firstIssue);
-        setSelectedIssueType("critical");
+        // Fall back to bad law category if no hallucinations
+        setSelectedCategory('badLaw');
         
         setTimeout(() => {
           const issueKey = `critical-0`;
@@ -118,7 +114,7 @@ export default function Home() {
         }, 300);
       }
     }
-  }, [status, reviewMemo, selectedIssue]);
+  }, [status, reviewMemo, selectedCategory, selectedIssue]);
 
   const performAnalysis = useCallback(async (text: string) => {
     setStatus("analyzing");
@@ -291,6 +287,8 @@ export default function Home() {
   const handleIssueClick = (issue: any, type: string, index: number) => {
     setSelectedIssue(issue);
     setSelectedIssueType(type);
+    setSelectedCategory(null);
+    setExpandedIssueId(`${type}-${index}`);
     
     const issueKey = `${type}-${index}`;
     const element = issueRefs.current[issueKey];
@@ -308,6 +306,61 @@ export default function Home() {
         });
       }
     }
+  };
+
+  // Handle category click
+  const handleCategoryClick = (category: string) => {
+    setSelectedCategory(category);
+    setSelectedIssue(null);
+    setExpandedIssueId(null);
+    
+    // Scroll to first issue of this type
+    if (reviewMemo) {
+      let firstIssueKey = '';
+      if (category === 'hallucinations' && reviewMemo.hallucinationSignals.length > 0) {
+        firstIssueKey = 'hallucination-0';
+      } else if (category === 'badLaw' && reviewMemo.criticalIssues.length > 0) {
+        firstIssueKey = 'critical-0';
+      }
+      
+      if (firstIssueKey) {
+        const element = issueRefs.current[firstIssueKey];
+        if (element) {
+          const viewer = document.getElementById('document-viewer');
+          if (viewer) {
+            const elementTop = element.offsetTop;
+            const viewerHeight = viewer.clientHeight;
+            const elementHeight = element.clientHeight;
+            const scrollPosition = elementTop - (viewerHeight / 2) + (elementHeight / 2);
+            
+            viewer.scrollTo({
+              top: scrollPosition,
+              behavior: 'smooth'
+            });
+          }
+        }
+      }
+    }
+  };
+
+  // Get issues by category
+  const getIssuesByCategory = () => {
+    if (!reviewMemo || !selectedCategory) return [];
+    
+    if (selectedCategory === 'hallucinations') {
+      return reviewMemo.hallucinationSignals.map((signal, idx) => ({
+        ...signal,
+        type: 'hallucination',
+        index: idx
+      }));
+    } else if (selectedCategory === 'badLaw') {
+      return reviewMemo.criticalIssues.map((issue, idx) => ({
+        ...issue,
+        type: 'critical',
+        index: idx
+      }));
+    }
+    return [];
   };
 
   return (
@@ -341,7 +394,7 @@ export default function Home() {
                     <div className="flex items-start gap-4">
                       <div className="p-3 bg-[#2A2A2A] rounded-lg">
                         {uploadedFile.type.includes('word') || uploadedFile.type.includes('document') ? (
-                          <svg className="w-8 h-8 text-blue-400" fill="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-8 h-8 text-green-400" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/>
                             <path d="M14 2v6h6M10 14l-1 4h6l-1-4-2 2-2-2z"/>
                           </svg>
@@ -455,7 +508,7 @@ export default function Home() {
               {!isExtracting && briefText.trim() && (
                 <button
                   onClick={handleSubmit}
-                  className="relative overflow-hidden px-8 py-4 rounded-lg font-semibold text-base transition-all bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-500 hover:to-blue-400 shadow-lg shadow-blue-900/30 cursor-pointer"
+                  className="relative overflow-hidden px-8 py-4 rounded-lg font-semibold text-base transition-all bg-gradient-to-r from-green-600 to-green-500 text-white hover:from-green-500 hover:to-green-400 shadow-lg shadow-green-900/30 cursor-pointer"
                 >
                   <span className="absolute inset-0 overflow-hidden">
                     <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-[shimmer_2s_infinite] -translate-x-full" 
@@ -486,7 +539,7 @@ export default function Home() {
               </span>
               <span className="text-gray-700">|</span>
               <span className="flex items-center gap-1.5">
-                <svg className="w-3 h-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
                 End-to-End Encrypted
@@ -522,19 +575,19 @@ export default function Home() {
               {status === "analyzing" && (
                 <div className="flex flex-col items-center justify-center py-12 space-y-6">
                   <div className="relative">
-                    <div className="w-20 h-20 border-4 border-gray-800 border-t-blue-500 rounded-full animate-spin" />
+                    <div className="w-20 h-20 border-4 border-gray-800 border-t-green-500 rounded-full animate-spin" />
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <svg className="w-10 h-10 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                       </svg>
                     </div>
                   </div>
                   <div className="space-y-2 text-center">
-                    <div className="text-sm text-blue-400 font-medium">
+                    <div className="text-sm text-green-400 font-medium">
                       Investigation In Progress
                     </div>
                     <div className="text-xs text-gray-500 flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
+                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
                       {currentStep}
                     </div>
                   </div>
@@ -584,7 +637,14 @@ export default function Home() {
                     <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-3">Issue Breakdown</div>
                     
                     {/* Hallucinations */}
-                    <div className="space-y-2">
+                    <button
+                      onClick={() => handleCategoryClick('hallucinations')}
+                      className={`w-full text-left space-y-2 p-3 rounded-lg transition-all ${
+                        selectedCategory === 'hallucinations'
+                          ? 'bg-red-900/20 border border-red-500/30'
+                          : 'hover:bg-[#2A2A2A]'
+                      }`}
+                    >
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-gray-400">Hallucinations</span>
                         <span className="text-xs font-medium text-red-400">{metrics.hallucinations}</span>
@@ -595,10 +655,17 @@ export default function Home() {
                           style={{ width: `${Math.min((metrics.hallucinations / 5) * 100, 100)}%` }}
                         />
                       </div>
-                    </div>
+                    </button>
 
                     {/* Bad Law */}
-                    <div className="space-y-2">
+                    <button
+                      onClick={() => handleCategoryClick('badLaw')}
+                      className={`w-full text-left space-y-2 p-3 rounded-lg transition-all ${
+                        selectedCategory === 'badLaw'
+                          ? 'bg-orange-900/20 border border-orange-500/30'
+                          : 'hover:bg-[#2A2A2A]'
+                      }`}
+                    >
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-gray-400">Bad Law</span>
                         <span className="text-xs font-medium text-orange-400">{metrics.badLaw}</span>
@@ -609,10 +676,17 @@ export default function Home() {
                           style={{ width: `${Math.min((metrics.badLaw / 5) * 100, 100)}%` }}
                         />
                       </div>
-                    </div>
+                    </button>
 
                     {/* Formatting */}
-                    <div className="space-y-2">
+                    <button
+                      onClick={() => handleCategoryClick('formatting')}
+                      className={`w-full text-left space-y-2 p-3 rounded-lg transition-all ${
+                        selectedCategory === 'formatting'
+                          ? 'bg-yellow-900/20 border border-yellow-500/30'
+                          : 'hover:bg-[#2A2A2A]'
+                      }`}
+                    >
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-gray-400">Formatting</span>
                         <span className="text-xs font-medium text-yellow-400">{metrics.formatting}</span>
@@ -623,7 +697,7 @@ export default function Home() {
                           style={{ width: `${Math.min((metrics.formatting / 5) * 100, 100)}%` }}
                         />
                       </div>
-                    </div>
+                    </button>
                   </div>
 
                   {/* Quick Actions */}
@@ -665,14 +739,46 @@ export default function Home() {
 
             {/* Center Panel: Document Viewer */}
             <div className="flex-1 bg-[#1A1A1A] h-full overflow-y-auto relative" id="document-viewer">
-              {/* Heatmap Scrollbar */}
-              <div className="absolute right-0 top-0 bottom-0 w-2 bg-[#0F0F0F] z-10">
+              {/* Enhanced Heatmap Scrollbar */}
+              <div className="absolute right-0 top-0 bottom-0 w-1.5 bg-[#0F0F0F] z-10">
                 {status === "complete" && reviewMemo && (
                   <>
-                    {/* Simulate error density markers */}
-                    <div className="absolute top-[10%] left-0 right-0 h-8 bg-red-500/30" />
-                    <div className="absolute top-[35%] left-0 right-0 h-12 bg-red-500/40" />
-                    <div className="absolute top-[60%] left-0 right-0 h-6 bg-yellow-500/30" />
+                    {/* Hallucination markers */}
+                    {reviewMemo.hallucinationSignals.map((signal, idx) => (
+                      <button
+                        key={`heatmap-hallucination-${idx}`}
+                        onClick={() => handleIssueClick(signal, 'hallucination', idx)}
+                        className="absolute left-0 right-0 bg-red-500 hover:bg-red-400 transition-all cursor-pointer group"
+                        style={{
+                          top: `${10 + (idx * 15)}%`,
+                          height: '32px',
+                          width: '6px'
+                        }}
+                        title={`Hallucination found - Click to view`}
+                      >
+                        <span className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-[10px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                          Hallucination found
+                        </span>
+                      </button>
+                    ))}
+                    {/* Critical issue markers */}
+                    {reviewMemo.criticalIssues.map((issue, idx) => (
+                      <button
+                        key={`heatmap-critical-${idx}`}
+                        onClick={() => handleIssueClick(issue, 'critical', idx)}
+                        className="absolute left-0 right-0 bg-orange-500 hover:bg-orange-400 transition-all cursor-pointer group"
+                        style={{
+                          top: `${35 + (idx * 12)}%`,
+                          height: '28px',
+                          width: '6px'
+                        }}
+                        title={`Bad Law found - Click to view`}
+                      >
+                        <span className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-[10px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                          Bad Law found
+                        </span>
+                      </button>
+                    ))}
                   </>
                 )}
               </div>
@@ -788,11 +894,141 @@ export default function Home() {
                 {selectedIssue ? "Issue Details" : "Inspector"}
               </div>
 
-              {!selectedIssue && status === "complete" && metrics && (
+              {/* Category List View */}
+              {selectedCategory && status === "complete" && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-medium text-gray-300">
+                      {selectedCategory === 'hallucinations' ? 'Hallucinations' : selectedCategory === 'badLaw' ? 'Bad Law' : 'Formatting Issues'}
+                      <span className="ml-2 text-xs text-gray-500">
+                        ({getIssuesByCategory().length})
+                      </span>
+                    </h3>
+                    <button
+                      onClick={() => {
+                        setSelectedCategory(null);
+                        setExpandedIssueId(null);
+                      }}
+                      className="text-xs text-gray-500 hover:text-gray-400"
+                    >
+                      Clear filter
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {getIssuesByCategory().map((issue: any) => {
+                      const issueId = `${issue.type}-${issue.index}`;
+                      const isExpanded = expandedIssueId === issueId;
+                      
+                      return (
+                        <div key={issueId} className="bg-[#1E1E1E] rounded-lg border border-gray-800 overflow-hidden">
+                          <button
+                            onClick={() => {
+                              if (isExpanded) {
+                                setExpandedIssueId(null);
+                              } else {
+                                setExpandedIssueId(issueId);
+                                // Scroll to this issue in the document
+                                const element = issueRefs.current[issueId];
+                                if (element) {
+                                  const viewer = document.getElementById('document-viewer');
+                                  if (viewer) {
+                                    const elementTop = element.offsetTop;
+                                    const viewerHeight = viewer.clientHeight;
+                                    const elementHeight = element.clientHeight;
+                                    const scrollPosition = elementTop - (viewerHeight / 2) + (elementHeight / 2);
+                                    
+                                    viewer.scrollTo({
+                                      top: scrollPosition,
+                                      behavior: 'smooth'
+                                    });
+                                  }
+                                }
+                              }
+                            }}
+                            className="w-full p-4 text-left hover:bg-[#252525] transition-colors"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="text-[11px] font-mono text-gray-400 line-clamp-2">
+                                  "{issue.quote}"
+                                </div>
+                              </div>
+                              <svg 
+                                className={`w-4 h-4 text-gray-500 flex-shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                                fill="none" 
+                                stroke="currentColor" 
+                                viewBox="0 0 24 24"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </div>
+                          </button>
+                          
+                          {isExpanded && (
+                            <div className="px-4 pb-4 space-y-4 border-t border-gray-800">
+                              {/* Document Quote */}
+                              <div className="pt-4">
+                                <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Document Quote</div>
+                                <div className="text-[12px] text-gray-300 leading-relaxed font-mono italic">
+                                  "{issue.quote}"
+                                </div>
+                              </div>
+
+                              {/* Problem/Pattern */}
+                              <div>
+                                <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">
+                                  {issue.problem ? 'Problem' : 'Pattern'}
+                                </div>
+                                <div className="text-[13px] text-gray-200 leading-relaxed">
+                                  {issue.problem || issue.pattern}
+                                </div>
+                              </div>
+
+                              {/* Additional Details */}
+                              {(issue.missingAuthority || issue.risk) && (
+                                <div>
+                                  <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">
+                                    {issue.missingAuthority ? 'Missing Authority' : 'Risk Assessment'}
+                                  </div>
+                                  <div className="text-[13px] text-gray-300 leading-relaxed">
+                                    {issue.missingAuthority || issue.risk}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Action Buttons */}
+                              <div className="pt-2">
+                                <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Next Steps</div>
+                                <div className="space-y-2">
+                                  <button className="w-full py-2 px-3 bg-green-600 hover:bg-green-500 text-white text-xs font-medium rounded transition-all flex items-center justify-center gap-2">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Verify on Westlaw/Lexis
+                                  </button>
+                                  <button className="w-full py-2 px-3 bg-[#2A2A2A] hover:bg-[#353535] border border-gray-700 text-xs text-gray-300 font-medium rounded transition-all flex items-center justify-center gap-2">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                    Suggest Correction
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {!selectedIssue && !selectedCategory && status === "complete" && metrics && (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center space-y-3">
-                    <div className="w-12 h-12 mx-auto bg-blue-500/10 rounded-full flex items-center justify-center">
-                      <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="w-12 h-12 mx-auto bg-green-500/10 rounded-full flex items-center justify-center">
+                      <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                       </svg>
                     </div>
@@ -803,7 +1039,7 @@ export default function Home() {
                 </div>
               )}
 
-              {selectedIssue && (
+              {!selectedCategory && selectedIssue && (
                 <div className="space-y-5">
                   {/* Issue Type Badge */}
                   <div className="flex items-center gap-2">
@@ -850,7 +1086,7 @@ export default function Home() {
                   <div className="bg-[#1E1E1E] rounded-lg p-4 border border-gray-800">
                     <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-3">Next Steps</div>
                     <div className="space-y-2">
-                      <button className="w-full py-2.5 px-3 bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium rounded transition-all flex items-center justify-center gap-2">
+                      <button className="w-full py-2.5 px-3 bg-green-600 hover:bg-green-500 text-white text-xs font-medium rounded transition-all flex items-center justify-center gap-2">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
@@ -900,7 +1136,7 @@ export default function Home() {
               </span>
               <span className="text-gray-800">|</span>
               <span className="flex items-center gap-1.5">
-                <svg className="w-3 h-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
                 End-to-End Encrypted
