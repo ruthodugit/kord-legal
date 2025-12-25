@@ -3,18 +3,26 @@
 @tailwind utilities;
 
 :root {
-  --foreground: #0A0A0A;
-  --background: #FFFFFF;
+  --foreground: #1A1A1A;
+  --background: #FAF9F6;
+  --grid-line: #E8E6E1;
 }
 
 .dark {
   --foreground: #ffffff;
   --background: #0A0A0A;
+  --grid-line: #1A1A1A;
 }
 
 body {
   color: var(--foreground);
-  background: var(--background);
+  /* Blueprint Grid Background */
+  background-color: var(--background);
+  background-image: 
+    repeating-linear-gradient(0deg, transparent, transparent 39px, var(--grid-line) 39px, var(--grid-line) 40px),
+    repeating-linear-gradient(90deg, transparent, transparent 39px, var(--grid-line) 39px, var(--grid-line) 40px);
+  background-size: 40px 40px;
+  background-position: 0 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -94,5 +102,58 @@ html {
   100% {
     transform: translateX(100%);
   }
+}
+
+/* Forensic Scanline Effect */
+@keyframes scanline {
+  0% {
+    top: -2px;
+  }
+  100% {
+    top: 100%;
+  }
+}
+
+/* Scanline overlay - laser scan effect */
+body::after {
+  content: '';
+  position: fixed;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(to bottom, 
+    transparent, 
+    rgba(255, 255, 255, 0.05) 50%, 
+    transparent
+  );
+  pointer-events: none;
+  z-index: 9998;
+  animation: scanline 10s linear infinite;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.03);
+}
+
+.dark body::after {
+  background: linear-gradient(to bottom, 
+    transparent, 
+    rgba(255, 255, 255, 0.05) 50%, 
+    transparent
+  );
+}
+
+/* Light mode scanline - slightly different color */
+body::after {
+  background: linear-gradient(to bottom, 
+    transparent, 
+    rgba(0, 0, 0, 0.05) 50%, 
+    transparent
+  );
+}
+
+.dark body::after {
+  background: linear-gradient(to bottom, 
+    transparent, 
+    rgba(255, 255, 255, 0.05) 50%, 
+    transparent
+  );
 }
 

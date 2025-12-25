@@ -416,7 +416,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-white dark:bg-[#0A0A0A] transition-colors duration-200">
+    <main className="min-h-screen bg-[#FAF9F6] dark:bg-[#0A0A0A] transition-colors duration-200">
 
       {/* Theme Toggle - Top Right */}
       <button
@@ -437,85 +437,9 @@ export default function Home() {
 
       {/* Pre-Upload State: Landing Page */}
       {!submittedDocument ? (
-        <div className="min-h-screen flex flex-col relative">
-          {/* Viewport Edge Doodles */}
-          {/* Top Left: Scale of Justice */}
-          <div className="fixed top-8 left-8 opacity-20 pointer-events-none hidden xl:block z-0">
-            <svg width="90" height="90" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-              {/* Stand */}
-              <line x1="50" y1="15" x2="50" y2="75" stroke="#E0E0E0" strokeWidth="1.8"/>
-              <path d="M40 75L60 75L58 85H42L40 75Z" stroke="#E0E0E0" strokeWidth="1.5" strokeLinejoin="round"/>
-              <line x1="35" y1="85" x2="65" y2="85" stroke="#E0E0E0" strokeWidth="2" strokeLinecap="round"/>
-              
-              {/* Balance beam */}
-              <line x1="20" y1="25" x2="80" y2="25" stroke="#E0E0E0" strokeWidth="1.8"/>
-              <circle cx="50" cy="25" r="3" stroke="#E0E0E0" strokeWidth="1.5"/>
-              
-              {/* Left scale */}
-              <line x1="25" y1="25" x2="25" y2="35" stroke="#E0E0E0" strokeWidth="1.3"/>
-              <path d="M15 38C15 35 18 35 20 35H30C32 35 35 35 35 38V42C35 44 32 46 30 46H20C18 46 15 44 15 42V38Z" stroke="#E0E0E0" strokeWidth="1.5"/>
-              
-              {/* Right scale */}
-              <line x1="75" y1="25" x2="75" y2="35" stroke="#E0E0E0" strokeWidth="1.3"/>
-              <path d="M65 38C65 35 68 35 70 35H80C82 35 85 35 85 38V42C85 44 82 46 80 46H70C68 46 65 44 65 42V38Z" stroke="#E0E0E0" strokeWidth="1.5"/>
-            </svg>
-          </div>
-
-          {/* Bottom Left: Stack of Law Books */}
-          <div className="fixed bottom-8 left-8 opacity-20 pointer-events-none hidden xl:block z-0" style={{ transform: 'rotate(-3deg)' }}>
-            <svg width="100" height="110" viewBox="0 0 90 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-              {/* Book 1 - Bottom */}
-              <rect x="15" y="65" width="60" height="22" rx="1" stroke="#E0E0E0" strokeWidth="1.5"/>
-              <path d="M15 71H75" stroke="#E0E0E0" strokeWidth="1.5"/>
-              <path d="M15 81H75" stroke="#E0E0E0" strokeWidth="1.5"/>
-              <rect x="70" y="67" width="5" height="18" rx="0.5" stroke="#E0E0E0" strokeWidth="1.5"/>
-              
-              {/* Book 2 - Middle */}
-              <rect x="18" y="42" width="58" height="20" rx="1" stroke="#E0E0E0" strokeWidth="1.5" transform="rotate(-2 18 42)"/>
-              <path d="M18 48L76 47" stroke="#E0E0E0" strokeWidth="1.5"/>
-              <path d="M18 56L76 55" stroke="#E0E0E0" strokeWidth="1.5"/>
-              
-              {/* Book 3 - Top */}
-              <rect x="20" y="20" width="55" height="19" rx="1" stroke="#E0E0E0" strokeWidth="1.5" transform="rotate(3 20 20)"/>
-              <path d="M20 26L75 28" stroke="#E0E0E0" strokeWidth="1.5"/>
-              <path d="M20 33L75 35" stroke="#E0E0E0" strokeWidth="1.5"/>
-            </svg>
-          </div>
-
-          {/* Middle Right: Fountain Pen */}
-          <div className="fixed top-1/2 right-12 -translate-y-1/2 opacity-20 pointer-events-none hidden xl:block z-0" style={{ transform: 'translateY(-50%) rotate(-15deg)' }}>
-            <svg width="130" height="45" viewBox="0 0 120 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-              {/* Pen body */}
-              <path d="M10 20L90 20" stroke="#E0E0E0" strokeWidth="1.8" strokeLinecap="round"/>
-              <path d="M10 17L90 17" stroke="#E0E0E0" strokeWidth="1.2" strokeLinecap="round"/>
-              <path d="M10 23L90 23" stroke="#E0E0E0" strokeWidth="1.2" strokeLinecap="round"/>
-              
-              {/* Pen tip */}
-              <path d="M90 20L105 18L105 22L90 20Z" stroke="#E0E0E0" strokeWidth="1.5" strokeLinejoin="round"/>
-              <path d="M105 18L110 19L110 21L105 22" stroke="#E0E0E0" strokeWidth="1.5" strokeLinejoin="round"/>
-              
-              {/* Pen cap */}
-              <circle cx="15" cy="20" r="6" stroke="#E0E0E0" strokeWidth="1.5"/>
-              <path d="M21 20L27 20" stroke="#E0E0E0" strokeWidth="1.5" strokeLinecap="round"/>
-              
-              {/* Clip */}
-              <path d="M14 12L14 5C14 3 15 2 16 2L16 12" stroke="#E0E0E0" strokeWidth="1.3" strokeLinecap="round"/>
-            </svg>
-          </div>
-
-          {/* Far Right: Vintage Gavel */}
-          <div className="fixed top-20 right-8 opacity-20 pointer-events-none hidden xl:block z-0">
-            <svg width="85" height="85" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M25 15L45 35M45 35L50 30L55 35L50 40L45 35Z" stroke="#E0E0E0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M20 42L28 50M28 50L25 53L22 50L25 47L28 50Z" stroke="#E0E0E0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <rect x="48" y="27" width="10" height="16" rx="1" transform="rotate(45 48 27)" stroke="#E0E0E0" strokeWidth="1.5"/>
-              <path d="M15 58C15 56 17 54 20 54H32C35 54 37 56 37 58V62C37 64 35 66 32 66H20C17 66 15 64 15 62V58Z" stroke="#E0E0E0" strokeWidth="1.5" strokeLinecap="round"/>
-              <line x1="20" y1="60" x2="32" y2="60" stroke="#E0E0E0" strokeWidth="1.5" strokeLinecap="round"/>
-            </svg>
-          </div>
-
+        <div className="min-h-screen flex flex-col">
           <div className="flex-1 flex items-center justify-center px-4 py-8">
-            <div className="w-full max-w-3xl mx-auto text-center space-y-8">
+            <div className="w-full mx-auto text-center space-y-8" style={{ maxWidth: '800px' }}>
               {/* Header Section */}
               <div className="space-y-6">
                 <div className="text-xs tracking-[0.3em] text-gray-500 dark:text-gray-500 uppercase font-medium">
@@ -523,13 +447,13 @@ export default function Home() {
                 </div>
                 
                 <h1 
-                  className="text-5xl md:text-6xl font-light text-gray-900 dark:text-white leading-tight tracking-[0.02em]"
-                  style={{ fontFamily: 'Baskerville, "Libre Baskerville", "Playfair Display", Georgia, serif' }}
+                  className="text-5xl md:text-6xl font-light text-[#1A1A1A] dark:text-white leading-tight"
+                  style={{ fontFamily: 'Baskerville, "Libre Baskerville", "Playfair Display", Georgia, serif', letterSpacing: '0.05em' }}
                 >
                   AI Legal Brief Investigator
                 </h1>
                 
-                <p className="text-base md:text-lg text-gray-600 dark:text-gray-400 leading-relaxed max-w-2xl mx-auto">
+                <p className="text-base md:text-lg text-gray-700 dark:text-gray-400 leading-relaxed mx-auto">
                   Sanction-proof your legal briefs in seconds. Kord investigates every citation to uncover hallucinations and strategic vulnerabilities.
                 </p>
               </div>
@@ -538,9 +462,9 @@ export default function Home() {
               <div className="space-y-4 relative">
                 {uploadedFile ? (
                   /* File Preview Card */
-                  <div className="bg-gray-50 dark:bg-[#1E1E1E] rounded-xl p-6 shadow-xl border border-gray-200 dark:border-gray-800">
+                  <div className="bg-[#F9F9F7] dark:bg-[#0D0D0D] rounded-xl p-6 shadow-xl border border-gray-200/30 dark:border-white/5">
                     <div className="flex items-start gap-4">
-                      <div className="p-3 bg-gray-100 dark:bg-[#2A2A2A] rounded-lg">
+                      <div className="p-3 bg-[#EFEFED] dark:bg-[#1A1A1A] rounded-lg">
                         {uploadedFile.type.includes('word') || uploadedFile.type.includes('document') ? (
                           <svg className="w-8 h-8 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/>
@@ -556,8 +480,8 @@ export default function Home() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
-                            <h3 className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{uploadedFile.name}</h3>
-                            <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">{wordCount.toLocaleString()} words extracted</p>
+                            <h3 className="text-sm font-medium text-[#1A1A1A] dark:text-gray-200 truncate">{uploadedFile.name}</h3>
+                            <p className="text-xs text-gray-600 dark:text-gray-500 mt-1">{wordCount.toLocaleString()} words extracted</p>
                           </div>
                           <button
                             onClick={handleRemoveFile}
@@ -588,7 +512,7 @@ export default function Home() {
                       }}
                       rows={3}
                       disabled={isExtracting}
-                      className="w-full px-6 py-4 bg-gray-50 dark:bg-[#1E1E1E] border border-gray-200 dark:border-0 rounded-xl focus:outline-none focus:ring-1 focus:ring-gray-300 dark:focus:ring-gray-700 transition-all resize-none text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600 text-base disabled:opacity-50 disabled:cursor-not-allowed shadow-xl"
+                      className="w-full px-6 py-4 bg-[#F9F9F7] dark:bg-[#0D0D0D] border border-gray-200/30 dark:border-white/5 rounded-xl focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-700 transition-all resize-none text-[#1A1A1A] dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-600 text-base disabled:opacity-50 disabled:cursor-not-allowed shadow-xl"
                       placeholder="Upload or paste document to begin"
                     />
                     
@@ -618,11 +542,11 @@ export default function Home() {
 
                 {/* Document Detection Status */}
                 {(briefText.trim() || uploadedFile) && !isExtracting && (
-                  <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-[#1E1E1E]/50 rounded-lg px-4 py-2.5 border border-gray-200 dark:border-gray-800/50">
+                  <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 bg-[#F9F9F7] dark:bg-[#0D0D0D]/50 rounded-lg px-4 py-2.5 border border-gray-200/30 dark:border-white/5">
                     <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" />
                     <span>
-                      Document detected: <span className="text-gray-900 dark:text-white font-semibold">{wordCount.toLocaleString()}</span> words. 
-                      Ready to scan for <span className="text-gray-900 dark:text-white font-semibold">4 critical vulnerability types</span>.
+                      Document detected: <span className="text-[#1A1A1A] dark:text-white font-semibold">{wordCount.toLocaleString()}</span> words. 
+                      Ready to scan for <span className="text-[#1A1A1A] dark:text-white font-semibold">4 critical vulnerability types</span>.
                     </span>
                   </div>
                 )}
@@ -647,7 +571,7 @@ export default function Home() {
               {!isExtracting && briefText.trim() && (
                 <button
                   onClick={handleSubmit}
-                  className="px-8 py-4 rounded-lg font-semibold text-base transition-all bg-[#F5F5F5] text-black hover:opacity-90 hover:border hover:border-gray-300 cursor-pointer"
+                  className="px-8 py-4 font-semibold text-base transition-all bg-[#F5F5F5] text-black hover:opacity-90 cursor-pointer"
                 >
                   Commence Investigation
                 </button>
