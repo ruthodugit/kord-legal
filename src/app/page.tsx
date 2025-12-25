@@ -28,10 +28,17 @@ interface OpposingCounselAttack {
   likelyChallenge: string;
 }
 
+interface FormattingIssue {
+  quote: string;
+  problem: string;
+  recommendation: string;
+}
+
 interface LegalReviewMemo {
   filingVerdict: FilingVerdict;
   criticalIssues: CriticalIssue[];
   hallucinationSignals: HallucinationSignal[];
+  formattingIssues: FormattingIssue[];
   opposingCounselPerspective: OpposingCounselAttack[];
   jurisdictionNotes: string;
 }
@@ -175,6 +182,18 @@ export default function Home() {
           risk: "Assertive language ('clearly,' 'unquestionably') without supporting case law suggests potential AI-generated content. Verify that controlling authority actually supports this statement."
         }
       ],
+      formattingIssues: [
+        {
+          quote: "Pursuant to Federal Rule of Civil Procedure 12(b)(6)",
+          problem: "Inconsistent citation style - should use 'Fed. R. Civ. P.' abbreviation per Bluebook",
+          recommendation: "Fed. R. Civ. P. 12(b)(6)"
+        },
+        {
+          quote: "see Brown v.United States",
+          problem: "Missing space after period in case name abbreviation",
+          recommendation: "See Brown v. United States"
+        }
+      ],
       opposingCounselPerspective: [
         {
           vulnerability: "Citation errors in United States v. Brown and Johnson v. State",
@@ -268,7 +287,7 @@ export default function Home() {
     
     const hallucinations = reviewMemo.hallucinationSignals.length;
     const badLaw = reviewMemo.criticalIssues.length;
-    const formatting = reviewMemo.opposingCounselPerspective.length;
+    const formatting = reviewMemo.formattingIssues.length;
     const total = hallucinations + badLaw + formatting;
     const maxScore = 100;
     const riskScore = Math.max(0, maxScore - (total * 10));
@@ -360,6 +379,12 @@ export default function Home() {
         type: 'critical',
         index: idx
       }));
+    } else if (selectedCategory === 'formatting') {
+      return reviewMemo.formattingIssues.map((issue, idx) => ({
+        ...issue,
+        type: 'formatting',
+        index: idx
+      }));
     }
     return [];
   };
@@ -368,6 +393,7 @@ export default function Home() {
   const getSanctionRisk = (issue: any, type: string) => {
     if (type === 'hallucination') return 'High';
     if (type === 'critical' && issue.quote.includes('v.')) return 'High';
+    if (type === 'formatting') return 'Low';
     return 'Medium';
   };
 
@@ -390,37 +416,133 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-[#0A0A0A] transition-colors duration-200">
+    <main className="min-h-screen bg-white dark:bg-[#0A0A0A] transition-colors duration-200">
+
+      {/* Theme Toggle - Top Right */}
+      <button
+        onClick={() => setIsDark(!isDark)}
+        className="fixed top-6 right-6 z-50 transition-colors"
+        aria-label="Toggle theme"
+      >
+        {isDark ? (
+          <svg className="w-6 h-6 text-gray-500 hover:text-gray-300 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+        ) : (
+          <svg className="w-6 h-6 text-gray-400 hover:text-gray-700 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+          </svg>
+        )}
+      </button>
 
       {/* Pre-Upload State: Landing Page */}
       {!submittedDocument ? (
-        <div className="min-h-screen flex flex-col">
+        <div className="min-h-screen flex flex-col relative">
+          {/* Viewport Edge Doodles */}
+          {/* Top Left: Scale of Justice */}
+          <div className="fixed top-8 left-8 opacity-20 pointer-events-none hidden xl:block z-0">
+            <svg width="90" height="90" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              {/* Stand */}
+              <line x1="50" y1="15" x2="50" y2="75" stroke="#E0E0E0" strokeWidth="1.8"/>
+              <path d="M40 75L60 75L58 85H42L40 75Z" stroke="#E0E0E0" strokeWidth="1.5" strokeLinejoin="round"/>
+              <line x1="35" y1="85" x2="65" y2="85" stroke="#E0E0E0" strokeWidth="2" strokeLinecap="round"/>
+              
+              {/* Balance beam */}
+              <line x1="20" y1="25" x2="80" y2="25" stroke="#E0E0E0" strokeWidth="1.8"/>
+              <circle cx="50" cy="25" r="3" stroke="#E0E0E0" strokeWidth="1.5"/>
+              
+              {/* Left scale */}
+              <line x1="25" y1="25" x2="25" y2="35" stroke="#E0E0E0" strokeWidth="1.3"/>
+              <path d="M15 38C15 35 18 35 20 35H30C32 35 35 35 35 38V42C35 44 32 46 30 46H20C18 46 15 44 15 42V38Z" stroke="#E0E0E0" strokeWidth="1.5"/>
+              
+              {/* Right scale */}
+              <line x1="75" y1="25" x2="75" y2="35" stroke="#E0E0E0" strokeWidth="1.3"/>
+              <path d="M65 38C65 35 68 35 70 35H80C82 35 85 35 85 38V42C85 44 82 46 80 46H70C68 46 65 44 65 42V38Z" stroke="#E0E0E0" strokeWidth="1.5"/>
+            </svg>
+          </div>
+
+          {/* Bottom Left: Stack of Law Books */}
+          <div className="fixed bottom-8 left-8 opacity-20 pointer-events-none hidden xl:block z-0" style={{ transform: 'rotate(-3deg)' }}>
+            <svg width="100" height="110" viewBox="0 0 90 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              {/* Book 1 - Bottom */}
+              <rect x="15" y="65" width="60" height="22" rx="1" stroke="#E0E0E0" strokeWidth="1.5"/>
+              <path d="M15 71H75" stroke="#E0E0E0" strokeWidth="1.5"/>
+              <path d="M15 81H75" stroke="#E0E0E0" strokeWidth="1.5"/>
+              <rect x="70" y="67" width="5" height="18" rx="0.5" stroke="#E0E0E0" strokeWidth="1.5"/>
+              
+              {/* Book 2 - Middle */}
+              <rect x="18" y="42" width="58" height="20" rx="1" stroke="#E0E0E0" strokeWidth="1.5" transform="rotate(-2 18 42)"/>
+              <path d="M18 48L76 47" stroke="#E0E0E0" strokeWidth="1.5"/>
+              <path d="M18 56L76 55" stroke="#E0E0E0" strokeWidth="1.5"/>
+              
+              {/* Book 3 - Top */}
+              <rect x="20" y="20" width="55" height="19" rx="1" stroke="#E0E0E0" strokeWidth="1.5" transform="rotate(3 20 20)"/>
+              <path d="M20 26L75 28" stroke="#E0E0E0" strokeWidth="1.5"/>
+              <path d="M20 33L75 35" stroke="#E0E0E0" strokeWidth="1.5"/>
+            </svg>
+          </div>
+
+          {/* Middle Right: Fountain Pen */}
+          <div className="fixed top-1/2 right-12 -translate-y-1/2 opacity-20 pointer-events-none hidden xl:block z-0" style={{ transform: 'translateY(-50%) rotate(-15deg)' }}>
+            <svg width="130" height="45" viewBox="0 0 120 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              {/* Pen body */}
+              <path d="M10 20L90 20" stroke="#E0E0E0" strokeWidth="1.8" strokeLinecap="round"/>
+              <path d="M10 17L90 17" stroke="#E0E0E0" strokeWidth="1.2" strokeLinecap="round"/>
+              <path d="M10 23L90 23" stroke="#E0E0E0" strokeWidth="1.2" strokeLinecap="round"/>
+              
+              {/* Pen tip */}
+              <path d="M90 20L105 18L105 22L90 20Z" stroke="#E0E0E0" strokeWidth="1.5" strokeLinejoin="round"/>
+              <path d="M105 18L110 19L110 21L105 22" stroke="#E0E0E0" strokeWidth="1.5" strokeLinejoin="round"/>
+              
+              {/* Pen cap */}
+              <circle cx="15" cy="20" r="6" stroke="#E0E0E0" strokeWidth="1.5"/>
+              <path d="M21 20L27 20" stroke="#E0E0E0" strokeWidth="1.5" strokeLinecap="round"/>
+              
+              {/* Clip */}
+              <path d="M14 12L14 5C14 3 15 2 16 2L16 12" stroke="#E0E0E0" strokeWidth="1.3" strokeLinecap="round"/>
+            </svg>
+          </div>
+
+          {/* Far Right: Vintage Gavel */}
+          <div className="fixed top-20 right-8 opacity-20 pointer-events-none hidden xl:block z-0">
+            <svg width="85" height="85" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M25 15L45 35M45 35L50 30L55 35L50 40L45 35Z" stroke="#E0E0E0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M20 42L28 50M28 50L25 53L22 50L25 47L28 50Z" stroke="#E0E0E0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <rect x="48" y="27" width="10" height="16" rx="1" transform="rotate(45 48 27)" stroke="#E0E0E0" strokeWidth="1.5"/>
+              <path d="M15 58C15 56 17 54 20 54H32C35 54 37 56 37 58V62C37 64 35 66 32 66H20C17 66 15 64 15 62V58Z" stroke="#E0E0E0" strokeWidth="1.5" strokeLinecap="round"/>
+              <line x1="20" y1="60" x2="32" y2="60" stroke="#E0E0E0" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </div>
+
           <div className="flex-1 flex items-center justify-center px-4 py-8">
             <div className="w-full max-w-3xl mx-auto text-center space-y-8">
               {/* Header Section */}
               <div className="space-y-6">
-                <div className="text-xs tracking-[0.3em] text-gray-500 uppercase font-medium">
+                <div className="text-xs tracking-[0.3em] text-gray-500 dark:text-gray-500 uppercase font-medium">
                   KORD LEGAL
                 </div>
                 
-                <h1 className="text-5xl md:text-6xl font-bold text-white leading-tight">
+                <h1 
+                  className="text-5xl md:text-6xl font-light text-gray-900 dark:text-white leading-tight tracking-[0.02em]"
+                  style={{ fontFamily: 'Baskerville, "Libre Baskerville", "Playfair Display", Georgia, serif' }}
+                >
                   AI Legal Brief Investigator
                 </h1>
                 
-                <p className="text-base md:text-lg text-gray-400 leading-relaxed max-w-2xl mx-auto">
-                  Upload a legal brief or motion. Kord investigates every citation, claim, and argument to uncover AI hallucinations, misused precedent, and vulnerabilities that could trigger sanctions
+                <p className="text-base md:text-lg text-gray-600 dark:text-gray-400 leading-relaxed max-w-2xl mx-auto">
+                  Sanction-proof your legal briefs in seconds. Kord investigates every citation to uncover hallucinations and strategic vulnerabilities.
                 </p>
               </div>
 
               {/* Input Section */}
-              <div className="space-y-4">
+              <div className="space-y-4 relative">
                 {uploadedFile ? (
                   /* File Preview Card */
-                  <div className="bg-[#1E1E1E] rounded-xl p-6 shadow-xl border border-gray-800">
+                  <div className="bg-gray-50 dark:bg-[#1E1E1E] rounded-xl p-6 shadow-xl border border-gray-200 dark:border-gray-800">
                     <div className="flex items-start gap-4">
-                      <div className="p-3 bg-[#2A2A2A] rounded-lg">
+                      <div className="p-3 bg-gray-100 dark:bg-[#2A2A2A] rounded-lg">
                         {uploadedFile.type.includes('word') || uploadedFile.type.includes('document') ? (
-                          <svg className="w-8 h-8 text-green-400" fill="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-8 h-8 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/>
                             <path d="M14 2v6h6M10 14l-1 4h6l-1-4-2 2-2-2z"/>
                           </svg>
@@ -434,8 +556,8 @@ export default function Home() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
-                            <h3 className="text-sm font-medium text-gray-200 truncate">{uploadedFile.name}</h3>
-                            <p className="text-xs text-gray-500 mt-1">{wordCount.toLocaleString()} words extracted</p>
+                            <h3 className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{uploadedFile.name}</h3>
+                            <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">{wordCount.toLocaleString()} words extracted</p>
                           </div>
                           <button
                             onClick={handleRemoveFile}
@@ -464,9 +586,9 @@ export default function Home() {
                           handleSubmit();
                         }
                       }}
-                      rows={6}
+                      rows={3}
                       disabled={isExtracting}
-                      className="w-full px-6 py-4 bg-[#1E1E1E] border-0 rounded-xl focus:outline-none focus:ring-1 focus:ring-gray-700 transition-all resize-none text-gray-200 placeholder-gray-600 text-base disabled:opacity-50 disabled:cursor-not-allowed shadow-xl"
+                      className="w-full px-6 py-4 bg-gray-50 dark:bg-[#1E1E1E] border border-gray-200 dark:border-0 rounded-xl focus:outline-none focus:ring-1 focus:ring-gray-300 dark:focus:ring-gray-700 transition-all resize-none text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600 text-base disabled:opacity-50 disabled:cursor-not-allowed shadow-xl"
                       placeholder="Upload or paste document to begin"
                     />
                     
@@ -483,20 +605,11 @@ export default function Home() {
                       <button
                         onClick={() => fileInputRef.current?.click()}
                         disabled={isExtracting}
-                        className="p-2 hover:bg-[#2A2A2A] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="p-2 hover:bg-gray-200 dark:hover:bg-[#2A2A2A] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         aria-label="Upload file"
                       >
-                        <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-5 h-5 text-gray-600 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                        </svg>
-                      </button>
-                      <button
-                        className="p-2 hover:bg-[#2A2A2A] rounded-lg transition-colors"
-                        aria-label="Voice input"
-                        disabled={isExtracting}
-                      >
-                        <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                         </svg>
                       </button>
                     </div>
@@ -505,11 +618,11 @@ export default function Home() {
 
                 {/* Document Detection Status */}
                 {(briefText.trim() || uploadedFile) && !isExtracting && (
-                  <div className="flex items-center gap-2 text-xs text-gray-400 bg-[#1E1E1E]/50 rounded-lg px-4 py-2.5 border border-gray-800/50">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                  <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-[#1E1E1E]/50 rounded-lg px-4 py-2.5 border border-gray-200 dark:border-gray-800/50">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" />
                     <span>
-                      Document detected: <span className="text-white font-semibold">{wordCount.toLocaleString()}</span> words. 
-                      Ready to scan for <span className="text-white font-semibold">4 critical vulnerability types</span>.
+                      Document detected: <span className="text-gray-900 dark:text-white font-semibold">{wordCount.toLocaleString()}</span> words. 
+                      Ready to scan for <span className="text-gray-900 dark:text-white font-semibold">4 critical vulnerability types</span>.
                     </span>
                   </div>
                 )}
@@ -534,21 +647,9 @@ export default function Home() {
               {!isExtracting && briefText.trim() && (
                 <button
                   onClick={handleSubmit}
-                  className="relative overflow-hidden px-8 py-4 rounded-lg font-semibold text-base transition-all bg-gradient-to-r from-green-600 to-green-500 text-white hover:from-green-500 hover:to-green-400 shadow-lg shadow-green-900/30 cursor-pointer"
+                  className="px-8 py-4 rounded-lg font-semibold text-base transition-all bg-[#F5F5F5] text-black hover:opacity-90 hover:border hover:border-gray-300 cursor-pointer"
                 >
-                  <span className="absolute inset-0 overflow-hidden">
-                    <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-[shimmer_2s_infinite] -translate-x-full" 
-                      style={{
-                        animation: 'shimmer 2s infinite',
-                      }}
-                    />
-                  </span>
-                  <span className="relative flex items-center justify-center gap-2">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    Commence Investigation
-                  </span>
+                  Commence Investigation
                 </button>
               )}
             </div>
@@ -556,16 +657,16 @@ export default function Home() {
 
           {/* Footer */}
           <div className="pb-6 text-center">
-            <p className="text-xs text-gray-600 flex items-center justify-center gap-3">
+            <p className="text-xs text-gray-500 dark:text-gray-600 flex items-center justify-center gap-3">
               <span className="flex items-center gap-1.5">
-                <svg className="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-3 h-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
                 SOC2 Compliant
               </span>
               <span className="text-gray-700">|</span>
               <span className="flex items-center gap-1.5">
-                <svg className="w-3 h-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
                 End-to-End Encrypted
@@ -601,19 +702,19 @@ export default function Home() {
               {status === "analyzing" && (
                 <div className="flex flex-col items-center justify-center py-12 space-y-6">
                   <div className="relative">
-                    <div className="w-20 h-20 border-4 border-gray-800 border-t-green-500 rounded-full animate-spin" />
+                    <div className="w-20 h-20 border-4 border-gray-800 border-t-gray-400 rounded-full animate-spin" />
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <svg className="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                       </svg>
                     </div>
                   </div>
                   <div className="space-y-2 text-center">
-                    <div className="text-sm text-green-400 font-medium">
+                    <div className="text-sm text-gray-300 font-medium">
                       Investigation In Progress
                     </div>
                     <div className="text-xs text-gray-500 flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                      <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-pulse" />
                       {currentStep}
                     </div>
                   </div>
@@ -709,17 +810,17 @@ export default function Home() {
                       onClick={() => handleCategoryClick('formatting')}
                       className={`w-full text-left space-y-2 p-3 rounded-lg transition-all ${
                         selectedCategory === 'formatting'
-                          ? 'bg-yellow-900/20 border border-yellow-500/30'
+                          ? 'bg-slate-800/40 border border-slate-600/30'
                           : 'hover:bg-[#2A2A2A]'
                       }`}
                     >
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-gray-400">Formatting</span>
-                        <span className="text-xs font-medium text-yellow-400">{metrics.formatting}</span>
+                        <span className="text-xs font-medium text-slate-400">{metrics.formatting}</span>
                       </div>
                       <div className="h-1.5 bg-[#2A2A2A] rounded-full overflow-hidden">
                         <div 
-                          className="h-full bg-gradient-to-r from-yellow-600 to-yellow-500 rounded-full transition-all duration-500"
+                          className="h-full bg-gradient-to-r from-slate-600 to-slate-500 rounded-full transition-all duration-500"
                           style={{ width: `${Math.min((metrics.formatting / 5) * 100, 100)}%` }}
                         />
                       </div>
@@ -812,8 +913,8 @@ export default function Home() {
               <div className="max-w-4xl mx-auto px-12 py-16">
                 {status === "complete" && reviewMemo ? (
                   <div 
-                    className="text-[15px] text-gray-300 whitespace-pre-wrap leading-[1.9] font-light"
-                    style={{ fontFamily: 'Baskerville, "Libre Baskerville", serif' }}
+                    className="text-[15px] whitespace-pre-wrap leading-[1.9] font-light"
+                    style={{ fontFamily: 'Baskerville, "Libre Baskerville", serif', color: '#E0E0E0' }}
                   >
                     {(() => {
                       if (!submittedDocument) return null;
@@ -905,8 +1006,8 @@ export default function Home() {
                   </div>
                 ) : (
                   <pre 
-                    className="text-[15px] text-gray-300 whitespace-pre-wrap leading-[1.9] font-light"
-                    style={{ fontFamily: 'Baskerville, "Libre Baskerville", serif' }}
+                    className="text-[15px] whitespace-pre-wrap leading-[1.9] font-light"
+                    style={{ fontFamily: 'Baskerville, "Libre Baskerville", serif', color: '#E0E0E0' }}
                   >
                     {submittedDocument}
                   </pre>
@@ -998,6 +1099,8 @@ export default function Home() {
                                 <span className={`text-[9px] px-2.5 py-1 rounded-full uppercase font-bold tracking-wider ${
                                   getSanctionRisk(issue, issue.type) === 'High'
                                     ? 'bg-red-500/20 text-red-400 border border-red-500'
+                                    : getSanctionRisk(issue, issue.type) === 'Low'
+                                    ? 'bg-slate-500/20 text-slate-400 border border-slate-500'
                                     : 'bg-orange-500/20 text-orange-400 border border-orange-500'
                                 }`}>
                                   {getSanctionRisk(issue, issue.type)} Sanction Risk
@@ -1062,38 +1165,40 @@ export default function Home() {
                                         United States v. Brown, 789 F.2d 123 (2d Cir. <span className="bg-red-500/30 px-1">2019</span>)
                                       </div>
                                     </div>
-                                    <div className="bg-green-950/20 p-3 rounded border-l-2 border-green-500">
-                                      <div className="text-[9px] text-green-400 uppercase mb-1">Actual Citation</div>
+                                    <div className="bg-gray-800/40 p-3 rounded border-l-2 border-gray-400">
+                                      <div className="text-[9px] text-gray-300 uppercase mb-1">Actual Citation</div>
                                       <div className="text-[11px] font-mono text-gray-300">
-                                        United States v. Brown, 789 F.2d 123 (2d Cir. <span className="bg-green-500/30 px-1">2018</span>)
+                                        United States v. Brown, 789 F.2d 123 (2d Cir. <span className="bg-gray-600/30 px-1">2018</span>)
                                       </div>
                                     </div>
                                   </div>
                                 </div>
                               )}
 
-                              {/* Opposition Playbook */}
-                              <div className="bg-purple-950/20 rounded p-3 border border-purple-900/30">
-                                <div className="text-[10px] text-purple-400 uppercase tracking-wider mb-2 font-semibold">⚔️ Opposition Exploit</div>
-                                <div className="text-[12px] text-gray-300 leading-relaxed">
-                                  {issue.type === 'hallucination' 
-                                    ? "Opposing counsel will verify this citation, discover it's fabricated, and file a motion arguing counsel violated Rule 11 by submitting false information to the court. They will request sanctions and use this error to undermine the credibility of your entire filing, potentially seeking attorney's fees."
-                                    : "Opposing counsel will cite the correct year and argue that your misrepresentation of controlling authority demonstrates inadequate legal research. They will use this to cast doubt on all your legal arguments and may seek to strike portions of your brief."
-                                  }
+                              {/* Opposition Playbook - Not shown for formatting issues */}
+                              {issue.type !== 'formatting' && (
+                                <div className="bg-purple-950/20 rounded p-3 border border-purple-900/30">
+                                  <div className="text-[10px] text-purple-400 uppercase tracking-wider mb-2 font-semibold">⚔️ Opposition Exploit</div>
+                                  <div className="text-[12px] text-gray-300 leading-relaxed">
+                                    {issue.type === 'hallucination' 
+                                      ? "Opposing counsel will verify this citation, discover it's fabricated, and file a motion arguing counsel violated Rule 11 by submitting false information to the court. They will request sanctions and use this error to undermine the credibility of your entire filing, potentially seeking attorney's fees."
+                                      : "Opposing counsel will cite the correct year and argue that your misrepresentation of controlling authority demonstrates inadequate legal research. They will use this to cast doubt on all your legal arguments and may seek to strike portions of your brief."
+                                    }
+                                  </div>
                                 </div>
-                              </div>
+                              )}
 
                               {/* Corrected Draft */}
                               <div>
-                                <div className="text-[10px] text-green-400 uppercase tracking-wider mb-2 font-semibold">✓ Corrected Draft</div>
-                                <div className="bg-green-950/10 rounded p-3 border border-green-900/30">
+                                <div className="text-[10px] text-gray-300 uppercase tracking-wider mb-2 font-semibold">✓ {issue.type === 'formatting' ? 'Correct Format' : 'Corrected Draft'}</div>
+                                <div className="bg-gray-800/20 rounded p-3 border border-gray-700/30">
                                   <div className="text-[12px] text-gray-300 leading-relaxed mb-3">
-                                    {getCorrectedDraft(issue, issue.type)}
+                                    {issue.recommendation || getCorrectedDraft(issue, issue.type)}
                                   </div>
-                                  <button
-                                    onClick={() => handleCopyToClipboard(getCorrectedDraft(issue, issue.type), issueId)}
-                                    className="w-full py-2 px-3 bg-green-600 hover:bg-green-500 text-white text-xs font-medium rounded transition-all flex items-center justify-center gap-2"
-                                  >
+                    <button
+                      onClick={() => handleCopyToClipboard(getCorrectedDraft(issue, issue.type), issueId)}
+                      className="w-full py-2 px-3 bg-[#F5F5F5] hover:opacity-90 hover:border hover:border-gray-300 text-black text-xs font-semibold rounded transition-all flex items-center justify-center gap-2"
+                    >
                                     {copiedText === issueId ? (
                                       <>
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1114,7 +1219,7 @@ export default function Home() {
                               </div>
 
                               {/* Verify Button */}
-                              <button className="w-full py-2.5 px-3 bg-[#2A2A2A] hover:bg-[#353535] border border-gray-700 text-xs text-gray-300 font-medium rounded transition-all flex items-center justify-center gap-2">
+                              <button className="w-full py-2.5 px-3 bg-white hover:bg-gray-100 text-black text-xs font-semibold rounded transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
@@ -1132,8 +1237,8 @@ export default function Home() {
               {!selectedIssue && !selectedCategory && status === "complete" && metrics && (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center space-y-3">
-                    <div className="w-12 h-12 mx-auto bg-green-500/10 rounded-full flex items-center justify-center">
-                      <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="w-12 h-12 mx-auto bg-gray-500/10 rounded-full flex items-center justify-center">
+                      <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                       </svg>
                     </div>
@@ -1151,6 +1256,8 @@ export default function Home() {
                     <span className={`text-[9px] px-2.5 py-1 rounded-full uppercase font-bold tracking-wider ${
                       getSanctionRisk(selectedIssue, selectedIssueType) === 'High'
                         ? 'bg-red-500/20 text-red-400 border border-red-500'
+                        : getSanctionRisk(selectedIssue, selectedIssueType) === 'Low'
+                        ? 'bg-slate-500/20 text-slate-400 border border-slate-500'
                         : 'bg-orange-500/20 text-orange-400 border border-orange-500'
                     }`}>
                       {getSanctionRisk(selectedIssue, selectedIssueType)} Sanction Risk
@@ -1158,9 +1265,11 @@ export default function Home() {
                     <span className={`text-[9px] px-2 py-1 rounded uppercase font-semibold tracking-wider ${
                       selectedIssueType === 'critical' 
                         ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                        : selectedIssueType === 'formatting'
+                        ? 'bg-slate-500/20 text-slate-400 border border-slate-500/30'
                         : 'bg-red-500/20 text-red-400 border border-red-500/30'
                     }`}>
-                      {selectedIssueType === 'critical' ? 'Bad Law' : 'Hallucination'}
+                      {selectedIssueType === 'critical' ? 'Bad Law' : selectedIssueType === 'formatting' ? 'Formatting' : 'Hallucination'}
                     </span>
                   </div>
 
@@ -1175,12 +1284,24 @@ export default function Home() {
                   {/* Strategic Vulnerability Card */}
                   <div className="bg-[#1E1E1E] rounded-lg p-4 border border-gray-800">
                     <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-3">
-                      Strategic Vulnerability
+                      {selectedIssue.problem ? 'Problem' : selectedIssue.pattern ? 'Pattern' : 'Issue'}
                     </div>
                     <div className="text-[13px] text-gray-200 leading-relaxed">
                       {selectedIssue.problem || selectedIssue.pattern}
                     </div>
                   </div>
+
+                  {/* Recommendation Card (for formatting issues) */}
+                  {selectedIssueType === 'formatting' && selectedIssue.recommendation && (
+                    <div className="bg-[#1E1E1E] rounded-lg p-4 border border-gray-800">
+                      <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-3">
+                        Recommendation
+                      </div>
+                      <div className="text-[13px] text-gray-200 leading-relaxed">
+                        {selectedIssue.recommendation}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Database Scan Results (for hallucinations) */}
                   {selectedIssueType === 'hallucination' && (
@@ -1222,38 +1343,40 @@ export default function Home() {
                             United States v. Brown, 789 F.2d 123 (2d Cir. <span className="bg-red-500/30 px-1">2019</span>)
                           </div>
                         </div>
-                        <div className="bg-green-950/20 p-3 rounded border-l-2 border-green-500">
-                          <div className="text-[9px] text-green-400 uppercase mb-1.5">Actual Citation</div>
+                        <div className="bg-gray-800/40 p-3 rounded border-l-2 border-gray-400">
+                          <div className="text-[9px] text-gray-300 uppercase mb-1.5">Actual Citation</div>
                           <div className="text-[11px] font-mono text-gray-300">
-                            United States v. Brown, 789 F.2d 123 (2d Cir. <span className="bg-green-500/30 px-1">2018</span>)
+                            United States v. Brown, 789 F.2d 123 (2d Cir. <span className="bg-gray-600/30 px-1">2018</span>)
                           </div>
                         </div>
                       </div>
                     </div>
                   )}
 
-                  {/* Opposition Playbook Card */}
-                  <div className="bg-purple-950/20 rounded-lg p-4 border border-purple-900/30">
-                    <div className="text-[10px] text-purple-400 uppercase tracking-wider mb-3 font-semibold">⚔️ Opposition Exploit</div>
-                    <div className="text-[12px] text-gray-300 leading-relaxed">
-                      {selectedIssueType === 'hallucination' 
-                        ? "Opposing counsel will verify this citation, discover it's fabricated, and file a motion arguing counsel violated Rule 11 by submitting false information to the court. They will request sanctions and use this error to undermine the credibility of your entire filing, potentially seeking attorney's fees."
-                        : "Opposing counsel will cite the correct year and argue that your misrepresentation of controlling authority demonstrates inadequate legal research. They will use this to cast doubt on all your legal arguments and may seek to strike portions of your brief."
-                      }
+                  {/* Opposition Playbook Card - Not shown for formatting issues */}
+                  {selectedIssueType !== 'formatting' && (
+                    <div className="bg-purple-950/20 rounded-lg p-4 border border-purple-900/30">
+                      <div className="text-[10px] text-purple-400 uppercase tracking-wider mb-3 font-semibold">⚔️ Opposition Exploit</div>
+                      <div className="text-[12px] text-gray-300 leading-relaxed">
+                        {selectedIssueType === 'hallucination' 
+                          ? "Opposing counsel will verify this citation, discover it's fabricated, and file a motion arguing counsel violated Rule 11 by submitting false information to the court. They will request sanctions and use this error to undermine the credibility of your entire filing, potentially seeking attorney's fees."
+                          : "Opposing counsel will cite the correct year and argue that your misrepresentation of controlling authority demonstrates inadequate legal research. They will use this to cast doubt on all your legal arguments and may seek to strike portions of your brief."
+                        }
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Corrected Draft Card */}
                   <div className="bg-[#1E1E1E] rounded-lg p-4 border border-gray-800">
-                    <div className="text-[10px] text-green-400 uppercase tracking-wider mb-3 font-semibold">✓ Corrected Draft</div>
-                    <div className="bg-green-950/10 rounded p-3 border border-green-900/30 mb-3">
+                    <div className="text-[10px] text-gray-300 uppercase tracking-wider mb-3 font-semibold">✓ Corrected Draft</div>
+                    <div className="bg-gray-800/20 rounded p-3 border border-gray-700/30 mb-3">
                       <div className="text-[12px] text-gray-300 leading-relaxed">
                         {getCorrectedDraft(selectedIssue, selectedIssueType)}
                       </div>
                     </div>
                     <button
                       onClick={() => handleCopyToClipboard(getCorrectedDraft(selectedIssue, selectedIssueType), 'single-issue')}
-                      className="w-full py-2.5 px-3 bg-green-600 hover:bg-green-500 text-white text-xs font-medium rounded transition-all flex items-center justify-center gap-2"
+                      className="w-full py-2.5 px-3 bg-[#F5F5F5] hover:opacity-90 hover:border hover:border-gray-300 text-black text-xs font-semibold rounded transition-all flex items-center justify-center gap-2"
                     >
                       {copiedText === 'single-issue' ? (
                         <>
@@ -1274,7 +1397,7 @@ export default function Home() {
                   </div>
 
                   {/* Verify Button */}
-                  <button className="w-full py-2.5 px-3 bg-[#2A2A2A] hover:bg-[#353535] border border-gray-700 text-xs text-gray-300 font-medium rounded transition-all flex items-center justify-center gap-2">
+                  <button className="w-full py-2.5 px-3 bg-white hover:bg-gray-100 text-black text-xs font-semibold rounded transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
@@ -1290,14 +1413,14 @@ export default function Home() {
           <div className="flex-shrink-0 py-3 bg-[#0F0F0F] border-t border-gray-900">
             <p className="text-[10px] text-gray-600 flex items-center justify-center gap-4">
               <span className="flex items-center gap-1.5">
-                <svg className="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-3 h-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
                 SOC2 Compliant
               </span>
               <span className="text-gray-800">|</span>
               <span className="flex items-center gap-1.5">
-                <svg className="w-3 h-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
                 End-to-End Encrypted

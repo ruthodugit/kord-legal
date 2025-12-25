@@ -3,6 +3,11 @@
 @tailwind utilities;
 
 :root {
+  --foreground: #0A0A0A;
+  --background: #FFFFFF;
+}
+
+.dark {
   --foreground: #ffffff;
   --background: #0A0A0A;
 }
@@ -15,23 +20,42 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbar - Dark Mode */
+.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #121212;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #2A2A2A;
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #353535;
+}
+
+/* Custom Scrollbar - Light Mode */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #121212;
+  background: #f1f1f1;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2A2A2A;
+  background: #c0c0c0;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #353535;
+  background: #a0a0a0;
 }
 
 /* Smooth scrolling */
