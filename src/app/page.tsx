@@ -50,6 +50,7 @@ export default function Home() {
   const [selectedIssueType, setSelectedIssueType] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [expandedIssueId, setExpandedIssueId] = useState<string | null>(null);
+  const [copiedText, setCopiedText] = useState<string | null>(null);
   const [uploadedFile, setUploadedFile] = useState<{ name: string; type: string } | null>(null);
   const [wordCount, setWordCount] = useState<number>(0);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -361,6 +362,31 @@ export default function Home() {
       }));
     }
     return [];
+  };
+
+  // Calculate sanction risk
+  const getSanctionRisk = (issue: any, type: string) => {
+    if (type === 'hallucination') return 'High';
+    if (type === 'critical' && issue.quote.includes('v.')) return 'High';
+    return 'Medium';
+  };
+
+  // Generate corrected draft
+  const getCorrectedDraft = (issue: any, type: string) => {
+    if (type === 'hallucination') {
+      return "The court in Smith v. Jones, 123 F.3d 456 (9th Cir. 2020), established that [legal principle]. This precedent supports the position that [your argument].";
+    }
+    if (type === 'critical') {
+      return "See Brown v. United States, 789 F.2d 123 (2d Cir. 2018), which held that [correct legal standard]. Accordingly, [your revised argument].";
+    }
+    return "Revised language based on verified authority.";
+  };
+
+  // Copy to clipboard
+  const handleCopyToClipboard = (text: string, issueId: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedText(issueId);
+    setTimeout(() => setCopiedText(null), 2000);
   };
 
   return (
@@ -966,55 +992,134 @@ export default function Home() {
                           </button>
                           
                           {isExpanded && (
-                            <div className="px-4 pb-4 space-y-4 border-t border-gray-800">
+                            <div className="px-4 pb-4 space-y-5 border-t border-gray-800">
+                              {/* Sanction Risk Badge */}
+                              <div className="pt-4 flex items-center justify-between">
+                                <span className={`text-[9px] px-2.5 py-1 rounded-full uppercase font-bold tracking-wider ${
+                                  getSanctionRisk(issue, issue.type) === 'High'
+                                    ? 'bg-red-500/20 text-red-400 border border-red-500'
+                                    : 'bg-orange-500/20 text-orange-400 border border-orange-500'
+                                }`}>
+                                  {getSanctionRisk(issue, issue.type)} Sanction Risk
+                                </span>
+                              </div>
+
                               {/* Document Quote */}
-                              <div className="pt-4">
-                                <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Document Quote</div>
-                                <div className="text-[12px] text-gray-300 leading-relaxed font-mono italic">
+                              <div>
+                                <div className="text-[10px] text-red-400 uppercase tracking-wider mb-2 font-semibold">⚠️ Problematic Text</div>
+                                <div className="text-[12px] text-gray-300 leading-relaxed font-mono italic bg-red-950/20 p-3 rounded border-l-2 border-red-500">
                                   "{issue.quote}"
                                 </div>
                               </div>
 
-                              {/* Problem/Pattern */}
+                              {/* Strategic Vulnerability */}
                               <div>
                                 <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">
-                                  {issue.problem ? 'Problem' : 'Pattern'}
+                                  Strategic Vulnerability
                                 </div>
                                 <div className="text-[13px] text-gray-200 leading-relaxed">
                                   {issue.problem || issue.pattern}
                                 </div>
                               </div>
 
-                              {/* Additional Details */}
-                              {(issue.missingAuthority || issue.risk) && (
-                                <div>
-                                  <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">
-                                    {issue.missingAuthority ? 'Missing Authority' : 'Risk Assessment'}
+                              {/* Database Scan Results (for hallucinations) */}
+                              {issue.type === 'hallucination' && (
+                                <div className="bg-[#1A1A1A] rounded p-3 border border-red-900/30">
+                                  <div className="text-[10px] text-red-400 uppercase tracking-wider mb-2 font-semibold">Database Scan Results</div>
+                                  <div className="space-y-1.5 text-[11px]">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-gray-400">Westlaw</span>
+                                      <span className="text-red-400 font-mono">0 results</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-gray-400">LexisNexis</span>
+                                      <span className="text-red-400 font-mono">0 results</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-gray-400">PACER</span>
+                                      <span className="text-red-400 font-mono">0 results</span>
+                                    </div>
                                   </div>
-                                  <div className="text-[13px] text-gray-300 leading-relaxed">
-                                    {issue.missingAuthority || issue.risk}
+                                  <div className="mt-2 pt-2 border-t border-gray-800">
+                                    <div className="text-[10px] text-red-400 flex items-center gap-1">
+                                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                      </svg>
+                                      Citation does not exist in legal databases
+                                    </div>
                                   </div>
                                 </div>
                               )}
 
-                              {/* Action Buttons */}
-                              <div className="pt-2">
-                                <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Next Steps</div>
-                                <div className="space-y-2">
-                                  <button className="w-full py-2 px-3 bg-green-600 hover:bg-green-500 text-white text-xs font-medium rounded transition-all flex items-center justify-center gap-2">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    Verify on Westlaw/Lexis
-                                  </button>
-                                  <button className="w-full py-2 px-3 bg-[#2A2A2A] hover:bg-[#353535] border border-gray-700 text-xs text-gray-300 font-medium rounded transition-all flex items-center justify-center gap-2">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                    </svg>
-                                    Suggest Correction
+                              {/* Diff View (for misquoted cases) */}
+                              {issue.type === 'critical' && issue.quote.includes('2019') && (
+                                <div>
+                                  <div className="text-[10px] text-orange-400 uppercase tracking-wider mb-2 font-semibold">Source Comparison</div>
+                                  <div className="space-y-2">
+                                    <div className="bg-red-950/20 p-3 rounded border-l-2 border-red-500">
+                                      <div className="text-[9px] text-red-400 uppercase mb-1">Your Brief</div>
+                                      <div className="text-[11px] font-mono text-gray-300">
+                                        United States v. Brown, 789 F.2d 123 (2d Cir. <span className="bg-red-500/30 px-1">2019</span>)
+                                      </div>
+                                    </div>
+                                    <div className="bg-green-950/20 p-3 rounded border-l-2 border-green-500">
+                                      <div className="text-[9px] text-green-400 uppercase mb-1">Actual Citation</div>
+                                      <div className="text-[11px] font-mono text-gray-300">
+                                        United States v. Brown, 789 F.2d 123 (2d Cir. <span className="bg-green-500/30 px-1">2018</span>)
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Opposition Playbook */}
+                              <div className="bg-purple-950/20 rounded p-3 border border-purple-900/30">
+                                <div className="text-[10px] text-purple-400 uppercase tracking-wider mb-2 font-semibold">⚔️ Opposition Exploit</div>
+                                <div className="text-[12px] text-gray-300 leading-relaxed">
+                                  {issue.type === 'hallucination' 
+                                    ? "Opposing counsel will verify this citation, discover it's fabricated, and file a motion arguing counsel violated Rule 11 by submitting false information to the court. They will request sanctions and use this error to undermine the credibility of your entire filing, potentially seeking attorney's fees."
+                                    : "Opposing counsel will cite the correct year and argue that your misrepresentation of controlling authority demonstrates inadequate legal research. They will use this to cast doubt on all your legal arguments and may seek to strike portions of your brief."
+                                  }
+                                </div>
+                              </div>
+
+                              {/* Corrected Draft */}
+                              <div>
+                                <div className="text-[10px] text-green-400 uppercase tracking-wider mb-2 font-semibold">✓ Corrected Draft</div>
+                                <div className="bg-green-950/10 rounded p-3 border border-green-900/30">
+                                  <div className="text-[12px] text-gray-300 leading-relaxed mb-3">
+                                    {getCorrectedDraft(issue, issue.type)}
+                                  </div>
+                                  <button
+                                    onClick={() => handleCopyToClipboard(getCorrectedDraft(issue, issue.type), issueId)}
+                                    className="w-full py-2 px-3 bg-green-600 hover:bg-green-500 text-white text-xs font-medium rounded transition-all flex items-center justify-center gap-2"
+                                  >
+                                    {copiedText === issueId ? (
+                                      <>
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        Copied!
+                                      </>
+                                    ) : (
+                                      <>
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                        </svg>
+                                        Copy to Clipboard
+                                      </>
+                                    )}
                                   </button>
                                 </div>
                               </div>
+
+                              {/* Verify Button */}
+                              <button className="w-full py-2.5 px-3 bg-[#2A2A2A] hover:bg-[#353535] border border-gray-700 text-xs text-gray-300 font-medium rounded transition-all flex items-center justify-center gap-2">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Verify on Westlaw/Lexis
+                              </button>
                             </div>
                           )}
                         </div>
@@ -1041,8 +1146,15 @@ export default function Home() {
 
               {!selectedCategory && selectedIssue && (
                 <div className="space-y-5">
-                  {/* Issue Type Badge */}
-                  <div className="flex items-center gap-2">
+                  {/* Sanction Risk & Type Badge */}
+                  <div className="flex items-center justify-between">
+                    <span className={`text-[9px] px-2.5 py-1 rounded-full uppercase font-bold tracking-wider ${
+                      getSanctionRisk(selectedIssue, selectedIssueType) === 'High'
+                        ? 'bg-red-500/20 text-red-400 border border-red-500'
+                        : 'bg-orange-500/20 text-orange-400 border border-orange-500'
+                    }`}>
+                      {getSanctionRisk(selectedIssue, selectedIssueType)} Sanction Risk
+                    </span>
                     <span className={`text-[9px] px-2 py-1 rounded uppercase font-semibold tracking-wider ${
                       selectedIssueType === 'critical' 
                         ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
@@ -1054,71 +1166,120 @@ export default function Home() {
 
                   {/* Document Quote Card */}
                   <div className="bg-[#1E1E1E] rounded-lg p-4 border border-gray-800">
-                    <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-3">Document Quote</div>
-                    <div className="text-[12px] text-gray-300 leading-relaxed font-mono italic">
+                    <div className="text-[10px] text-red-400 uppercase tracking-wider mb-3 font-semibold">⚠️ Problematic Text</div>
+                    <div className="text-[12px] text-gray-300 leading-relaxed font-mono italic bg-red-950/20 p-3 rounded border-l-2 border-red-500">
                       "{selectedIssue.quote}"
                     </div>
                   </div>
 
-                  {/* Problem Analysis Card */}
+                  {/* Strategic Vulnerability Card */}
                   <div className="bg-[#1E1E1E] rounded-lg p-4 border border-gray-800">
                     <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-3">
-                      {selectedIssue.problem ? 'Problem' : 'Pattern'}
+                      Strategic Vulnerability
                     </div>
                     <div className="text-[13px] text-gray-200 leading-relaxed">
                       {selectedIssue.problem || selectedIssue.pattern}
                     </div>
                   </div>
 
-                  {/* Additional Details Card */}
-                  {(selectedIssue.missingAuthority || selectedIssue.risk) && (
-                    <div className="bg-[#1E1E1E] rounded-lg p-4 border border-gray-800">
-                      <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-3">
-                        {selectedIssue.missingAuthority ? 'Missing Authority' : 'Risk Assessment'}
+                  {/* Database Scan Results (for hallucinations) */}
+                  {selectedIssueType === 'hallucination' && (
+                    <div className="bg-[#1A1A1A] rounded p-4 border border-red-900/30">
+                      <div className="text-[10px] text-red-400 uppercase tracking-wider mb-3 font-semibold">Database Scan Results</div>
+                      <div className="space-y-2 text-[11px]">
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-400">Westlaw</span>
+                          <span className="text-red-400 font-mono">0 results</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-400">LexisNexis</span>
+                          <span className="text-red-400 font-mono">0 results</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-400">PACER</span>
+                          <span className="text-red-400 font-mono">0 results</span>
+                        </div>
                       </div>
-                      <div className="text-[13px] text-gray-300 leading-relaxed">
-                        {selectedIssue.missingAuthority || selectedIssue.risk}
+                      <div className="mt-3 pt-3 border-t border-gray-800">
+                        <div className="text-[10px] text-red-400 flex items-center gap-1.5">
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                          </svg>
+                          Citation does not exist in legal databases
+                        </div>
                       </div>
                     </div>
                   )}
 
-                  {/* Action Buttons Card */}
-                  <div className="bg-[#1E1E1E] rounded-lg p-4 border border-gray-800">
-                    <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-3">Next Steps</div>
-                    <div className="space-y-2">
-                      <button className="w-full py-2.5 px-3 bg-green-600 hover:bg-green-500 text-white text-xs font-medium rounded transition-all flex items-center justify-center gap-2">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        Verify on Westlaw/Lexis
-                      </button>
-                      <button className="w-full py-2.5 px-3 bg-[#2A2A2A] hover:bg-[#353535] border border-gray-700 text-xs text-gray-300 font-medium rounded transition-all flex items-center justify-center gap-2">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                        Suggest Correction
-                      </button>
+                  {/* Diff View (for misquoted cases) */}
+                  {selectedIssueType === 'critical' && selectedIssue.quote.includes('2019') && (
+                    <div className="bg-[#1E1E1E] rounded-lg p-4 border border-gray-800">
+                      <div className="text-[10px] text-orange-400 uppercase tracking-wider mb-3 font-semibold">Source Comparison</div>
+                      <div className="space-y-2">
+                        <div className="bg-red-950/20 p-3 rounded border-l-2 border-red-500">
+                          <div className="text-[9px] text-red-400 uppercase mb-1.5">Your Brief</div>
+                          <div className="text-[11px] font-mono text-gray-300">
+                            United States v. Brown, 789 F.2d 123 (2d Cir. <span className="bg-red-500/30 px-1">2019</span>)
+                          </div>
+                        </div>
+                        <div className="bg-green-950/20 p-3 rounded border-l-2 border-green-500">
+                          <div className="text-[9px] text-green-400 uppercase mb-1.5">Actual Citation</div>
+                          <div className="text-[11px] font-mono text-gray-300">
+                            United States v. Brown, 789 F.2d 123 (2d Cir. <span className="bg-green-500/30 px-1">2018</span>)
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Opposition Playbook Card */}
+                  <div className="bg-purple-950/20 rounded-lg p-4 border border-purple-900/30">
+                    <div className="text-[10px] text-purple-400 uppercase tracking-wider mb-3 font-semibold">⚔️ Opposition Exploit</div>
+                    <div className="text-[12px] text-gray-300 leading-relaxed">
+                      {selectedIssueType === 'hallucination' 
+                        ? "Opposing counsel will verify this citation, discover it's fabricated, and file a motion arguing counsel violated Rule 11 by submitting false information to the court. They will request sanctions and use this error to undermine the credibility of your entire filing, potentially seeking attorney's fees."
+                        : "Opposing counsel will cite the correct year and argue that your misrepresentation of controlling authority demonstrates inadequate legal research. They will use this to cast doubt on all your legal arguments and may seek to strike portions of your brief."
+                      }
                     </div>
                   </div>
 
-                  {/* Feedback Card */}
+                  {/* Corrected Draft Card */}
                   <div className="bg-[#1E1E1E] rounded-lg p-4 border border-gray-800">
-                    <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-3">Was this helpful?</div>
-                    <div className="flex gap-2">
-                      <button className="flex-1 py-2.5 px-3 bg-[#2A2A2A] hover:bg-green-900/20 hover:border-green-500 border border-gray-700 text-xs text-gray-400 hover:text-green-400 rounded transition-all flex items-center justify-center gap-2">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
-                        </svg>
-                        Yes
-                      </button>
-                      <button className="flex-1 py-2.5 px-3 bg-[#2A2A2A] hover:bg-red-900/20 hover:border-red-500 border border-gray-700 text-xs text-gray-400 hover:text-red-400 rounded transition-all flex items-center justify-center gap-2">
-                        <svg className="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
-                        </svg>
-                        No
-                      </button>
+                    <div className="text-[10px] text-green-400 uppercase tracking-wider mb-3 font-semibold">✓ Corrected Draft</div>
+                    <div className="bg-green-950/10 rounded p-3 border border-green-900/30 mb-3">
+                      <div className="text-[12px] text-gray-300 leading-relaxed">
+                        {getCorrectedDraft(selectedIssue, selectedIssueType)}
+                      </div>
                     </div>
+                    <button
+                      onClick={() => handleCopyToClipboard(getCorrectedDraft(selectedIssue, selectedIssueType), 'single-issue')}
+                      className="w-full py-2.5 px-3 bg-green-600 hover:bg-green-500 text-white text-xs font-medium rounded transition-all flex items-center justify-center gap-2"
+                    >
+                      {copiedText === 'single-issue' ? (
+                        <>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          Copied!
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                          Copy to Clipboard
+                        </>
+                      )}
+                    </button>
                   </div>
+
+                  {/* Verify Button */}
+                  <button className="w-full py-2.5 px-3 bg-[#2A2A2A] hover:bg-[#353535] border border-gray-700 text-xs text-gray-300 font-medium rounded transition-all flex items-center justify-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Verify on Westlaw/Lexis
+                  </button>
                 </div>
               )}
 
