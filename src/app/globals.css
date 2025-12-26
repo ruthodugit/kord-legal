@@ -5,12 +5,14 @@
 :root {
   --foreground: #1A1A1A;
   --background: #FAF9F6;
+  --surface: #F2F1ED;
   --grid-line: #E8E6E1;
 }
 
 .dark {
-  --foreground: #ffffff;
-  --background: #0A0A0A;
+  --foreground: #FFFFFF;
+  --background: #050505;
+  --surface: #0F0F0F;
   --grid-line: #1A1A1A;
 }
 
@@ -114,7 +116,7 @@ html {
   }
 }
 
-/* Scanline overlay - laser scan effect */
+/* Scanline overlay - laser scan effect (only on home/upload page) */
 body::after {
   content: '';
   position: fixed;
@@ -130,6 +132,11 @@ body::after {
   z-index: 9998;
   animation: scanline 10s linear infinite;
   box-shadow: 0 0 10px rgba(255, 255, 255, 0.03);
+}
+
+/* Hide scanline when analysis is active */
+.hide-scanline::after {
+  display: none;
 }
 
 .dark body::after {
