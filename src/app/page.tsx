@@ -45,7 +45,6 @@ interface LegalReviewMemo {
 
 export default function Home() {
   const [briefText, setBriefText] = useState("");
-  const [isDark, setIsDark] = useState(true);
   const [status, setStatus] = useState<AnalysisStatus>("idle");
   const [currentStep, setCurrentStep] = useState("");
   const [reviewMemo, setReviewMemo] = useState<LegalReviewMemo | null>(null);
@@ -63,14 +62,10 @@ export default function Home() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const issueRefs = useRef<{ [key: string]: HTMLSpanElement | null }>({});
 
-  // Handle theme changes
+  // Ensure dark class is always present for single-theme mode
   useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [isDark]);
+    document.documentElement.classList.add("dark");
+  }, []);
 
   // Hide scanline during analysis
   useEffect(() => {
@@ -427,24 +422,6 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#FAF9F6] dark:bg-[#050505] transition-colors duration-200">
 
-      {/* Theme Toggle - Top Right */}
-      <button
-        onClick={() => setIsDark(!isDark)}
-        className="fixed top-6 right-6 z-[10000] p-2.5 transition-colors bg-transparent hover:bg-transparent"
-        aria-label="Toggle theme"
-        style={{ minWidth: '44px', minHeight: '44px' }}
-      >
-        {isDark ? (
-          <svg className="w-6 h-6 text-gray-500 hover:text-gray-300 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-          </svg>
-        ) : (
-          <svg className="w-6 h-6 text-gray-400 hover:text-gray-700 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-          </svg>
-        )}
-      </button>
-
       {/* Pre-Upload State: Landing Page */}
       {!submittedDocument ? (
         <div className="min-h-screen flex flex-col">
@@ -543,17 +520,17 @@ export default function Home() {
               />
               
                     <div className="absolute bottom-4 right-4 flex items-center gap-3 z-10">
-                      <button
+                <button
                         onClick={() => fileInputRef.current?.click()}
                         disabled={isExtracting}
                         className="p-2 hover:bg-gray-200 dark:hover:bg-[#1A1A1A] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        aria-label="Upload file"
-                      >
+                  aria-label="Upload file"
+                >
                         <svg className="w-5 h-5 text-gray-600 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                        </svg>
-                      </button>
-                    </div>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                </button>
+              </div>
             </div>
                 )}
 
@@ -603,7 +580,7 @@ export default function Home() {
             {/* Left Sidebar: Summary & Risk Score */}
             <div className="w-72 bg-[#F2F1ED] dark:bg-[#0F0F0F] p-6 h-full overflow-y-auto flex flex-col gap-6 sticky top-0">
               {/* Header */}
-              <div>
+                <div>
                 <div className="flex items-center justify-between">
                   <button
                     onClick={() => {
@@ -623,29 +600,12 @@ export default function Home() {
                       setUploadTime("");
                       setCopiedText(null);
                     }}
-                    className="text-[10px] text-gray-500 dark:text-gray-500 hover:text-gray-400 dark:hover:text-gray-400 transition-colors uppercase tracking-wider"
+                    className="text-[10px] text-[#141414] dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 transition-colors uppercase tracking-wider"
                   >
                     ← New Analysis
                   </button>
-                  
-                  {/* Theme Toggle */}
-                  <button
-                    onClick={() => setIsDark(!isDark)}
-                    className="p-1.5 transition-colors bg-transparent hover:bg-transparent"
-                    aria-label="Toggle theme"
-                  >
-                    {isDark ? (
-                      <svg className="w-4 h-4 text-gray-500 hover:text-gray-300 transition-colors" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
-                      </svg>
-                    ) : (
-                      <svg className="w-4 h-4 text-gray-400 hover:text-gray-700 transition-colors" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
-                      </svg>
-                    )}
-                  </button>
                 </div>
-                <div className="text-[9px] text-gray-600 mt-2 uppercase tracking-wide">
+                <div className="text-[9px] text-[#141414] dark:text-gray-600 mt-2 uppercase tracking-wide">
                   {uploadTime}
                 </div>
               </div>
@@ -675,7 +635,7 @@ export default function Home() {
               {status === "complete" && metrics && (
                 <>
                   {/* Risk Score */}
-                  <div className="bg-white dark:bg-[#0A0A0A] rounded-lg p-6 space-y-4 border border-gray-200 dark:border-white/5">
+                  <div className="bg-[#F2F1ED] dark:bg-[#0A0A0A] rounded-lg p-6 space-y-4 border border-gray-200 dark:border-white/5">
                     <div className="text-[10px] text-gray-500 uppercase tracking-wider">Risk Score</div>
                     <div className="relative">
                       <svg className="w-32 h-32 mx-auto transform -rotate-90">
@@ -712,7 +672,7 @@ export default function Home() {
                   </div>
 
                   {/* Category Breakdown */}
-                  <div className="bg-white dark:bg-[#0A0A0A] rounded-lg p-5 space-y-4 border border-gray-200 dark:border-white/5">
+                  <div className="bg-[#F2F1ED] dark:bg-[#0A0A0A] rounded-lg p-5 space-y-4 border border-gray-200 dark:border-white/5">
                     <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-3">Issue Breakdown</div>
                     
                     {/* Hallucinations */}
@@ -832,8 +792,8 @@ export default function Home() {
               <div className="max-w-4xl mx-auto px-12 py-16">
                 {status === "complete" && reviewMemo ? (
                   <div 
-                    className="text-[15px] whitespace-pre-wrap leading-[1.9] font-light"
-                    style={{ fontFamily: 'Baskerville, "Libre Baskerville", serif', color: '#E0E0E0' }}
+                    className="text-[15px] whitespace-pre-wrap leading-[1.9] font-light text-[#141414] dark:text-white"
+                    style={{ fontFamily: 'Baskerville, "Libre Baskerville", serif' }}
                   >
                     {(() => {
                       if (!submittedDocument) return null;
@@ -925,8 +885,8 @@ export default function Home() {
                   </div>
                 ) : (
                   <pre 
-                    className="text-[15px] whitespace-pre-wrap leading-[1.9] font-light"
-                    style={{ fontFamily: 'Baskerville, "Libre Baskerville", serif', color: '#E0E0E0' }}
+                    className="text-[15px] whitespace-pre-wrap leading-[1.9] font-light text-[#141414] dark:text-white"
+                    style={{ fontFamily: 'Baskerville, "Libre Baskerville", serif' }}
                   >
                     {submittedDocument}
                   </pre>
@@ -936,7 +896,7 @@ export default function Home() {
 
             {/* Right Panel: Inspector */}
             <div className="w-80 bg-[#F2F1ED] dark:bg-[#0F0F0F] p-6 h-full overflow-y-auto sticky top-0">
-              <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-6">
+              <div className="text-[10px] text-[#141414] dark:text-gray-500 uppercase tracking-wider mb-6">
                 {selectedIssue ? "Issue Details" : "Inspector"}
               </div>
 
@@ -944,7 +904,7 @@ export default function Home() {
               {selectedCategory && status === "complete" && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-medium text-gray-300">
+                    <h3 className="text-sm font-medium text-[#141414] dark:text-gray-300">
                       {selectedCategory === 'hallucinations' ? 'Hallucinations' : selectedCategory === 'badLaw' ? 'Bad Law' : 'Formatting Issues'}
                       <span className="ml-2 text-xs text-gray-500">
                         ({getIssuesByCategory().length})
@@ -967,7 +927,7 @@ export default function Home() {
                       const isExpanded = expandedIssueId === issueId;
                       
                       return (
-                        <div key={issueId} className="bg-white dark:bg-[#0A0A0A] rounded-lg border border-gray-200 dark:border-white/10 overflow-hidden">
+                        <div key={issueId} className="bg-[#F2F1ED] dark:bg-[#0A0A0A] rounded-lg border border-gray-200 dark:border-white/10 overflow-hidden">
                           <button
                             onClick={() => {
                               if (isExpanded) {
@@ -1096,9 +1056,9 @@ export default function Home() {
 
                               {/* Opposition Playbook - Not shown for formatting issues */}
                               {issue.type !== 'formatting' && (
-                                <div className="bg-purple-950/20 rounded p-3 border border-purple-900/30">
+                                <div className="rounded p-3 border border-purple-900/30 dark:border-purple-900/30">
                                   <div className="text-[10px] text-purple-400 uppercase tracking-wider mb-2 font-semibold">⚔️ Opposition Exploit</div>
-                                  <div className="text-[12px] text-gray-300 leading-relaxed">
+                                  <div className="text-[12px] text-[#141414] dark:text-gray-300 leading-relaxed">
                                     {issue.type === 'hallucination' 
                                       ? "Opposing counsel will verify this citation, discover it's fabricated, and file a motion arguing counsel violated Rule 11 by submitting false information to the court. They will request sanctions and use this error to undermine the credibility of your entire filing, potentially seeking attorney's fees."
                                       : "Opposing counsel will cite the correct year and argue that your misrepresentation of controlling authority demonstrates inadequate legal research. They will use this to cast doubt on all your legal arguments and may seek to strike portions of your brief."
@@ -1138,7 +1098,7 @@ export default function Home() {
                               </div>
 
                               {/* Verify Button */}
-                              <button className="w-full py-2.5 px-3 bg-white hover:bg-gray-100 text-black text-xs font-semibold rounded transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg">
+                              <button className="w-full py-2.5 px-3 bg-[#F2F1ED] hover:bg-gray-100 text-[#1A1A1A] text-xs font-semibold rounded transition-all flex items-center justify-center gap-2 border border-gray-200">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
@@ -1193,7 +1153,7 @@ export default function Home() {
                   </div>
 
                   {/* Document Quote Card */}
-                  <div className="bg-white dark:bg-[#0A0A0A] rounded-lg p-4 border border-gray-200 dark:border-white/10">
+                  <div className="bg-[#F2F1ED] dark:bg-[#0A0A0A] rounded-lg p-4 border border-gray-200 dark:border-white/10">
                     <div className="text-[10px] text-red-400 uppercase tracking-wider mb-3 font-semibold">⚠️ Problematic Text</div>
                     <div className="text-[12px] text-gray-300 leading-relaxed font-mono italic bg-red-950/20 p-3 rounded border-l-2 border-red-500">
                       "{selectedIssue.quote}"
@@ -1201,7 +1161,7 @@ export default function Home() {
                   </div>
 
                   {/* Strategic Vulnerability Card */}
-                  <div className="bg-white dark:bg-[#0A0A0A] rounded-lg p-4 border border-gray-200 dark:border-white/10">
+                  <div className="bg-[#F2F1ED] dark:bg-[#0A0A0A] rounded-lg p-4 border border-gray-200 dark:border-white/10">
                     <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-3">
                       {selectedIssue.problem ? 'Problem' : selectedIssue.pattern ? 'Pattern' : 'Issue'}
                     </div>
@@ -1212,7 +1172,7 @@ export default function Home() {
 
                   {/* Recommendation Card (for formatting issues) */}
                   {selectedIssueType === 'formatting' && selectedIssue.recommendation && (
-                    <div className="bg-white dark:bg-[#0A0A0A] rounded-lg p-4 border border-gray-200 dark:border-white/10">
+                    <div className="bg-[#F2F1ED] dark:bg-[#0A0A0A] rounded-lg p-4 border border-gray-200 dark:border-white/10">
                       <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-3">
                         Recommendation
                       </div>
@@ -1253,7 +1213,7 @@ export default function Home() {
 
                   {/* Diff View (for misquoted cases) */}
                   {selectedIssueType === 'critical' && selectedIssue.quote.includes('2019') && (
-                    <div className="bg-white dark:bg-[#0A0A0A] rounded-lg p-4 border border-gray-200 dark:border-white/10">
+                    <div className="bg-[#F2F1ED] dark:bg-[#0A0A0A] rounded-lg p-4 border border-gray-200 dark:border-white/10">
                       <div className="text-[10px] text-orange-400 uppercase tracking-wider mb-3 font-semibold">Source Comparison</div>
                   <div className="space-y-2">
                         <div className="bg-red-950/20 p-3 rounded border-l-2 border-red-500">
@@ -1274,9 +1234,9 @@ export default function Home() {
 
                   {/* Opposition Playbook Card - Not shown for formatting issues */}
                   {selectedIssueType !== 'formatting' && (
-                    <div className="bg-purple-950/20 rounded-lg p-4 border border-purple-900/30">
+                    <div className="rounded-lg p-4 border border-purple-900/30 dark:border-purple-900/30">
                       <div className="text-[10px] text-purple-400 uppercase tracking-wider mb-3 font-semibold">⚔️ Opposition Exploit</div>
-                      <div className="text-[12px] text-gray-300 leading-relaxed">
+                      <div className="text-[12px] text-[#141414] dark:text-gray-300 leading-relaxed">
                         {selectedIssueType === 'hallucination' 
                           ? "Opposing counsel will verify this citation, discover it's fabricated, and file a motion arguing counsel violated Rule 11 by submitting false information to the court. They will request sanctions and use this error to undermine the credibility of your entire filing, potentially seeking attorney's fees."
                           : "Opposing counsel will cite the correct year and argue that your misrepresentation of controlling authority demonstrates inadequate legal research. They will use this to cast doubt on all your legal arguments and may seek to strike portions of your brief."
@@ -1286,7 +1246,7 @@ export default function Home() {
                   )}
 
                   {/* Corrected Draft Card */}
-                  <div className="bg-white dark:bg-[#0A0A0A] rounded-lg p-4 border border-gray-200 dark:border-white/10">
+                  <div className="bg-[#F2F1ED] dark:bg-[#0A0A0A] rounded-lg p-4 border border-gray-200 dark:border-white/10">
                     <div className="text-[10px] text-gray-300 uppercase tracking-wider mb-3 font-semibold">✓ Corrected Draft</div>
                     <div className="bg-gray-800/20 rounded p-3 border border-gray-700/30 mb-3">
                       <div className="text-[12px] text-gray-300 leading-relaxed">
@@ -1295,7 +1255,7 @@ export default function Home() {
                     </div>
                     <button
                       onClick={() => handleCopyToClipboard(getCorrectedDraft(selectedIssue, selectedIssueType), 'single-issue')}
-                      className="w-full py-2.5 px-3 bg-white dark:bg-[#0A0A0A] hover:opacity-90 border border-gray-300 dark:border-white/10 text-[#1A1A1A] dark:text-white text-xs font-semibold rounded transition-all flex items-center justify-center gap-2"
+                      className="w-full py-2.5 px-3 bg-[#F2F1ED] dark:bg-[#0A0A0A] hover:opacity-90 border border-gray-300 dark:border-white/10 text-[#1A1A1A] dark:text-white text-xs font-semibold rounded transition-all flex items-center justify-center gap-2"
                     >
                       {copiedText === 'single-issue' ? (
                         <>
@@ -1316,7 +1276,7 @@ export default function Home() {
                   </div>
 
                   {/* Verify Button */}
-                  <button className="w-full py-2.5 px-3 bg-white hover:bg-gray-100 text-black text-xs font-semibold rounded transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg">
+                  <button className="w-full py-2.5 px-3 bg-[#F2F1ED] hover:bg-gray-100 text-[#1A1A1A] text-xs font-semibold rounded transition-all flex items-center justify-center gap-2 border border-gray-200">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
@@ -1328,7 +1288,7 @@ export default function Home() {
               {/* Quick Actions - Bottom of Inspector */}
               {status === "complete" && (
                 <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-800 space-y-3">
-                  <div className="text-[10px] text-gray-500 dark:text-gray-500 uppercase tracking-wider mb-3">Quick Actions</div>
+                  <div className="text-[10px] text-[#141414] dark:text-gray-500 uppercase tracking-wider mb-3">Quick Actions</div>
                   <button 
                     onClick={() => {
                       // Mock download
@@ -1340,7 +1300,7 @@ export default function Home() {
                       a.click();
                       URL.revokeObjectURL(url);
                     }}
-                    className="w-full py-2.5 px-3 bg-white dark:bg-[#0A0A0A] hover:bg-gray-100 dark:hover:bg-[#1A1A1A] text-xs text-[#1A1A1A] dark:text-white rounded transition-colors text-left font-medium border border-gray-200 dark:border-white/10"
+                    className="w-full py-2.5 px-3 bg-[#F2F1ED] dark:bg-[#0A0A0A] hover:bg-gray-100 dark:hover:bg-[#1A1A1A] text-xs text-[#1A1A1A] dark:text-white rounded transition-colors text-left font-medium border border-gray-200 dark:border-white/10"
                   >
                     Export Report
                   </button>
@@ -1351,12 +1311,12 @@ export default function Home() {
                       navigator.clipboard.writeText(shareUrl);
                       alert(`Share link copied: ${shareUrl}`);
                     }}
-                    className="w-full py-2.5 px-3 bg-white dark:bg-[#0A0A0A] hover:bg-gray-100 dark:hover:bg-[#1A1A1A] text-xs text-[#1A1A1A] dark:text-white rounded transition-colors text-left font-medium border border-gray-200 dark:border-white/10"
+                    className="w-full py-2.5 px-3 bg-[#F2F1ED] dark:bg-[#0A0A0A] hover:bg-gray-100 dark:hover:bg-[#1A1A1A] text-xs text-[#1A1A1A] dark:text-white rounded transition-colors text-left font-medium border border-gray-200 dark:border-white/10"
                   >
                     Share Review
                   </button>
-                </div>
-              )}
+              </div>
+            )}
 
             </div>
           </div>
