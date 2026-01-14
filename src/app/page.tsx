@@ -746,7 +746,7 @@ export default function Home() {
             {/* Center Panel: Document Viewer */}
             <div className="flex-1 bg-[#F2F1ED] dark:bg-[#0F0F0F] h-full overflow-y-auto relative" id="document-viewer">
               {/* Enhanced Heatmap Scrollbar */}
-              <div className="absolute right-0 top-0 bottom-0 w-1.5 bg-[#E8E6E1] dark:bg-[#0A0A0A] z-10">
+              <div className="hidden absolute right-0 top-0 bottom-0 w-1.5 bg-[#E8E6E1] dark:bg-[#0A0A0A] z-10">
                 {status === "complete" && reviewMemo && (
                   <>
                     {/* Hallucination markers */}
