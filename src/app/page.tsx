@@ -131,6 +131,12 @@ export default function Home() {
   const performAnalysis = useCallback(async (text: string) => {
     setStatus("analyzing");
     
+    // Log for debugging different documents
+    console.log('=== NEW ANALYSIS ===');
+    console.log('Document length:', text.length);
+    console.log('First 150 chars:', text.substring(0, 150));
+    console.log('Timestamp:', new Date().toISOString());
+    
     // Detective-style analysis steps
     const citationCount = (text.match(/\d+\s+[A-Z][a-z]+\.?\s+\d+/g) || []).length;
     const steps = [
@@ -190,15 +196,20 @@ Required JSON structure:
   "jurisdictionNotes": "notes about citation standards"
 }
 
-DOCUMENT:
-${text.substring(0, 3500)}
+DOCUMENT (File: ${uploadedFile?.name || 'pasted text'}, Length: ${text.length} chars, analyzing first 5000 chars):
+${text.substring(0, 5000)}
 
 Return ONLY the JSON object, nothing else.`;
+
+      console.log('Sending to API - Doc preview:', text.substring(0, 100));
 
       const response = await fetch('/api/investigate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt })
+        body: JSON.stringify({ 
+          prompt,
+          requestId: Date.now() // Unique request identifier
+        })
       });
 
       if (!response.ok) {
@@ -315,6 +326,13 @@ Return ONLY the JSON object, nothing else.`;
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // CRITICAL: Clear all previous analysis state for fresh analysis
+    setReviewMemo(null);
+    setStatus("idle");
+    setSubmittedDocument(null);
+    setSelectedCategory(null);
+    setSelectedIssue(null);
+    
     setIsExtracting(true);
     setExtractionError("");
   
@@ -623,7 +641,7 @@ Return ONLY the JSON object, nothing else.`;
                     <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" />
                     <span>
                       Document detected: <span className="text-[#1A1A1A] dark:text-white font-semibold">{wordCount.toLocaleString()}</span> words. 
-                      Ready to scan for <span className="text-[#1A1A1A] dark:text-white font-semibold">4 critical vulnerability types</span>.
+                      Ready to scan for <span className="text-[#1A1A1A] dark:text-white font-semibold">3 critical vulnerability types</span>.
                     </span>
               </div>
             )}
@@ -1181,7 +1199,14 @@ Return ONLY the JSON object, nothing else.`;
                               </div>
 
                               {/* Verify Button */}
-                              <button className="w-full py-2.5 px-3 bg-[#F2F1ED] hover:bg-gray-100 text-[#1A1A1A] text-xs font-semibold rounded transition-all flex items-center justify-center gap-2 border border-gray-200">
+                              <button 
+                                onClick={() => {
+                                  // Extract citation from quote and open Westlaw search
+                                  const searchQuery = encodeURIComponent(issue.quote);
+                                  window.open(`https://www.westlaw.com/search/default.aspx?query=${searchQuery}`, '_blank');
+                                }}
+                                className="w-full py-2.5 px-3 bg-[#F2F1ED] hover:bg-gray-100 text-[#1A1A1A] text-xs font-semibold rounded transition-all flex items-center justify-center gap-2 border border-gray-200"
+                              >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
@@ -1359,7 +1384,14 @@ Return ONLY the JSON object, nothing else.`;
                   </div>
 
                   {/* Verify Button */}
-                  <button className="w-full py-2.5 px-3 bg-[#F2F1ED] hover:bg-gray-100 text-[#1A1A1A] text-xs font-semibold rounded transition-all flex items-center justify-center gap-2 border border-gray-200">
+                  <button 
+                    onClick={() => {
+                      // Extract citation from quote and open Westlaw search
+                      const searchQuery = encodeURIComponent(selectedIssue.quote);
+                      window.open(`https://www.westlaw.com/search/default.aspx?query=${searchQuery}`, '_blank');
+                    }}
+                    className="w-full py-2.5 px-3 bg-[#F2F1ED] hover:bg-gray-100 text-[#1A1A1A] text-xs font-semibold rounded transition-all flex items-center justify-center gap-2 border border-gray-200"
+                  >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>

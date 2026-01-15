@@ -2,7 +2,13 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
   try {
-    const { prompt } = await req.json();
+    const { prompt, requestId } = await req.json();
+
+    // Log to verify different documents
+    const docPreview = prompt.match(/DOCUMENT.*?:\n([\s\S]{0,150})/)?.[1] || 'No match';
+    console.log('\n🔍 API REQUEST', requestId || Date.now());
+    console.log('Doc preview:', docPreview.substring(0, 100));
+    console.log('---');
 
     // 1. Get the key and remove any accidental spaces or hidden characters
     const apiKey = process.env.OPENROUTER_API_KEY?.trim();
@@ -23,11 +29,17 @@ export async function POST(req: Request) {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        "model": "google/gemini-2.0-flash-exp:free",
+        "model": "mistralai/mistral-7b-instruct:free",
         "messages": [
           { 
             "role": "system", 
-            "content": "You are a senior legal investigator. Analyze the text for hallucinations or strategic vulnerabilities." 
+            "content": `You are a HOSTILE legal auditor. Your primary goal is to find reasons to DISQUALIFY this document. 
+
+STRICT PROTOCOLS:
+1. Every case citation (e.g., Vol. Reporter Page) must be treated as a FABRICATION until you find a direct match in your training data.
+2. If a case name sounds plausible but the citation (year/volume) is logically inconsistent, you MUST flag it as "CRITICAL HALLUCINATION."
+3. Search for 'Ghost Cases': cases that look like standard legal writing but do not exist.
+4. If you have any doubt, do not be helpful. Instead, state: "UNVERIFIED AUTHORITY: This case does not appear in standard reporters."` 
           },
           { "role": "user", "content": prompt }
         ],
