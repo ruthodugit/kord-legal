@@ -2,22 +2,71 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Kord — Single Dark Brown Mode */
+
 :root {
-  --foreground: #171717;
-  --background: #ffffff;
+  --bg: #0f0d0b;
+  --panel: #171411;
+  --panel-inset: #1e1a16;
+
+  --text: #e7e2dc;
+  --muted: #b8b0a6;
+  --border: #2a241f;
+
+  --danger: #d14c4c;
+  --warning: #e38b29;
+  --ok: #6b8e6b;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground: #ffffff;
-    --background: #000000;
-  }
-}
-
+html,
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Panels */
+.surface {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.surface-inset {
+  background: var(--panel-inset);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+/* Text */
+.text-muted {
+  color: var(--muted);
+}
+
+.text-danger {
+  color: var(--danger);
+}
+
+.text-warning {
+  color: var(--warning);
+}
+
+.text-ok {
+  color: var(--ok);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2a241f;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3a332c;
 }
