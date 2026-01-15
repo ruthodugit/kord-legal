@@ -142,77 +142,160 @@ export default function Home() {
       "Assessing Rule 11 compliance risk..."
     ];
 
+    // Show progress steps
     for (const step of steps) {
       setCurrentStep(step);
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 800));
     }
 
-    // Generate legal review memo (evidence-based analysis)
-    const mockReviewMemo: LegalReviewMemo = {
-      filingVerdict: {
-        readiness: "file_with_caution",
-        justification: [
-          "Two citations contain factual errors that could be discovered by opposing counsel",
-          "One material damages claim lacks record support and invites challenge",
-          "No issues rise to sanctionable conduct, but credibility exposure is present"
-        ]
-      },
-      criticalIssues: [
-        {
-          quote: "United States v. Brown, 789 F.2d 123 (2d Cir. 2019)",
-          problem: "The cited case was decided in 2018, not 2019. This factual error in a cited authority undermines credibility and suggests inadequate case verification.",
-          missingAuthority: "Verified reporter citation showing correct year of decision"
-        },
-        {
-          quote: "Plaintiff suffered damages exceeding $500,000",
-          problem: "No supporting documentation, record reference, expert report, or evidentiary foundation provided for this specific figure. Unsupported damage assertions can be struck or viewed as speculative.",
-          missingAuthority: "Citation to discovery materials, exhibits, expert declarations, or itemized damage calculations establishing the claimed amount"
-        },
-        {
-          quote: "Johnson v. State, 456 U.S. 789 (2021)",
-          problem: "This citation cannot be verified in U.S. Reports. The case may not exist, may be miscited, or may be from a different reporter entirely.",
-          missingAuthority: "Verified citation to the actual case in proper reporter format, or removal if the case does not exist"
-        }
-      ],
-      hallucinationSignals: [
-        {
-          quote: "Courts have consistently held that [legal proposition]",
-          pattern: "Vague authority invocation without specific case citations",
-          risk: "Generic phrases like 'courts have held' or 'it is well established' without supporting citations are common AI hallucination patterns. Opposing counsel may challenge lack of specific authority."
-        },
-        {
-          quote: "This jurisdiction clearly recognizes...",
-          pattern: "Overconfident legal conclusion without pinpoint citation",
-          risk: "Assertive language ('clearly,' 'unquestionably') without supporting case law suggests potential AI-generated content. Verify that controlling authority actually supports this statement."
-        }
-      ],
-      formattingIssues: [
-        {
-          quote: "Pursuant to Federal Rule of Civil Procedure 12(b)(6)",
-          problem: "Inconsistent citation style - should use 'Fed. R. Civ. P.' abbreviation per Bluebook",
-          recommendation: "Fed. R. Civ. P. 12(b)(6)"
-        },
-        {
-          quote: "see Brown v.United States",
-          problem: "Missing space after period in case name abbreviation",
-          recommendation: "See Brown v. United States"
-        }
-      ],
-      opposingCounselPerspective: [
-        {
-          vulnerability: "Citation errors in United States v. Brown and Johnson v. State",
-          likelyChallenge: "Opposing counsel will verify these citations, discover the errors, and argue in response brief that plaintiff's counsel failed to properly research authorities, casting doubt on all legal arguments presented."
-        },
-        {
-          vulnerability: "Unsupported $500,000 damages claim",
-          likelyChallenge: "Motion to strike the specific damage figure as speculative and unsupported by record evidence. May also argue bad faith or Rule 11 concerns if no reasonable basis exists for the amount."
-        }
-      ],
-      jurisdictionNotes: "Federal courts in this circuit apply heightened scrutiny to citation accuracy following recent Rule 11 enforcement actions involving AI-generated briefs. The Second Circuit requires strict Bluebook compliance and verifiable citations to primary sources. Local rules mandate certification of research accuracy."
-    };
+    try {
+      // Call the actual AI API
+      setCurrentStep("Generating AI analysis report...");
+      
+      const prompt = `You are a senior legal investigator. Analyze this legal brief and return ONLY a raw JSON object (no markdown, no code blocks, no extra text).
 
-    setReviewMemo(mockReviewMemo);
-    setStatus("complete");
+Required JSON structure:
+{
+  "filingVerdict": {
+    "readiness": "file_with_caution",
+    "justification": ["brief reason 1", "brief reason 2", "brief reason 3"]
+  },
+  "criticalIssues": [
+    {
+      "quote": "exact text from document showing the problem",
+      "problem": "why this is a legal issue",
+      "missingAuthority": "what citation or support is needed"
+    }
+  ],
+  "hallucinationSignals": [
+    {
+      "quote": "suspicious text from document",
+      "pattern": "AI hallucination pattern detected",
+      "risk": "why this is risky"
+    }
+  ],
+  "formattingIssues": [
+    {
+      "quote": "text with formatting issue",
+      "problem": "formatting problem",
+      "recommendation": "corrected version"
+    }
+  ],
+  "opposingCounselPerspective": [
+    {
+      "vulnerability": "weak point",
+      "likelyChallenge": "how they would attack it"
+    }
+  ],
+  "jurisdictionNotes": "notes about citation standards"
+}
+
+DOCUMENT:
+${text.substring(0, 3500)}
+
+Return ONLY the JSON object, nothing else.`;
+
+      const response = await fetch('/api/investigate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('API Error Response:', errorData);
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Raw API Response:', data);
+      
+      // Extract AI response content
+      const aiContent = data.choices?.[0]?.message?.content || '';
+      console.log('AI Content:', aiContent);
+      
+      if (!aiContent) {
+        throw new Error('No content in AI response');
+      }
+      
+      // Parse the JSON response from AI
+      let parsedAnalysis: LegalReviewMemo;
+      
+      // Try multiple parsing strategies
+      let jsonString = aiContent.trim();
+      
+      // Remove markdown code blocks if present
+      const codeBlockMatch = jsonString.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+      if (codeBlockMatch) {
+        jsonString = codeBlockMatch[1].trim();
+      }
+      
+      // Find JSON object
+      const jsonObjectMatch = jsonString.match(/\{[\s\S]*\}/);
+      if (jsonObjectMatch) {
+        jsonString = jsonObjectMatch[0];
+      }
+      
+      try {
+        parsedAnalysis = JSON.parse(jsonString);
+        console.log('Successfully parsed AI analysis:', parsedAnalysis);
+      } catch (parseError) {
+        console.error('JSON Parse Error:', parseError);
+        console.error('Failed to parse:', jsonString);
+        throw new Error('Failed to parse AI response as JSON');
+      }
+
+      // Validate the structure
+      if (!parsedAnalysis.filingVerdict || !parsedAnalysis.criticalIssues) {
+        console.error('Invalid analysis structure:', parsedAnalysis);
+        throw new Error('AI response missing required fields');
+      }
+
+      setReviewMemo(parsedAnalysis);
+      setStatus("complete");
+      
+    } catch (error) {
+      console.error('Analysis error:', error);
+      
+      // Fallback: Use mock analysis if AI fails
+      setCurrentStep("Using fallback analysis...");
+      
+      const fallbackAnalysis: LegalReviewMemo = {
+        filingVerdict: {
+          readiness: "file_with_caution",
+          justification: [
+            "AI analysis unavailable - using fallback review",
+            "Manual verification of citations recommended",
+            "Document structure appears standard but requires expert review"
+          ]
+        },
+        criticalIssues: [
+          {
+            quote: text.substring(0, 100) + "...",
+            problem: "Unable to perform deep AI analysis. This is a fallback review showing the document was processed but may contain unverified citations.",
+            missingAuthority: "Full AI analysis required for comprehensive citation verification"
+          }
+        ],
+        hallucinationSignals: [
+          {
+            quote: "Analysis system",
+            pattern: "AI service temporarily unavailable",
+            risk: "This is a fallback analysis. For production use, ensure API key is properly configured in .env.local file."
+          }
+        ],
+        formattingIssues: [],
+        opposingCounselPerspective: [
+          {
+            vulnerability: "Citations not verified by AI system",
+            likelyChallenge: "Manual review required to ensure all citations are accurate and properly formatted."
+          }
+        ],
+        jurisdictionNotes: "Fallback analysis mode. Configure OPENROUTER_API_KEY in .env.local for full AI-powered analysis."
+      };
+      
+      setReviewMemo(fallbackAnalysis);
+      setStatus("complete");
+    }
   }, []);
 
   const handleSubmit = useCallback(() => {
@@ -1291,12 +1374,104 @@ export default function Home() {
                   <div className="text-[10px] text-[#141414] dark:text-gray-500 uppercase tracking-wider mb-3">Quick Actions</div>
                   <button 
                     onClick={() => {
-                      // Mock download
-                      const blob = new Blob(['KORD Legal Analysis Report\n\nThis is a mock export.'], { type: 'text/plain' });
+                      if (!reviewMemo) return;
+                      
+                      // Check if this is a successful AI analysis or fallback
+                      const isFallback = reviewMemo.filingVerdict.justification.some(j => 
+                        j.includes('AI analysis unavailable') || 
+                        j.includes('Fallback analysis mode') ||
+                        j.includes('fallback review')
+                      );
+                      
+                      const analysisStatus = isFallback 
+                        ? `Status: ${reviewMemo.filingVerdict.readiness.replace(/_/g, ' ').toUpperCase()}`
+                        : 'Status: AI ANALYSIS COMPLETE';
+                      
+                      // Generate comprehensive report from actual AI analysis
+                      const reportSections = [
+                        '═══════════════════════════════════════════════════',
+                        'KORD LEGAL - AI BRIEF INVESTIGATION REPORT',
+                        '═══════════════════════════════════════════════════',
+                        `Generated: ${new Date().toLocaleString()}`,
+                        '',
+                        '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+                        'FILING READINESS VERDICT',
+                        '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+                        analysisStatus,
+                        '',
+                        isFallback ? 'Justification:' : 'AI Summary:',
+                        ...reviewMemo.filingVerdict.justification.map(j => `  • ${j}`),
+                        '',
+                        '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+                        `CRITICAL ISSUES (${reviewMemo.criticalIssues.length})`,
+                        '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+                        '',
+                        ...reviewMemo.criticalIssues.flatMap((issue, idx) => [
+                          `[${idx + 1}] QUOTE:`,
+                          `    "${issue.quote}"`,
+                          '',
+                          `    PROBLEM:`,
+                          `    ${issue.problem}`,
+                          '',
+                          `    MISSING AUTHORITY:`,
+                          `    ${issue.missingAuthority}`,
+                          '',
+                        ]),
+                        '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+                        `HALLUCINATION RISK SIGNALS (${reviewMemo.hallucinationSignals.length})`,
+                        '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+                        '',
+                        ...reviewMemo.hallucinationSignals.flatMap((signal, idx) => [
+                          `[${idx + 1}] QUOTE:`,
+                          `    "${signal.quote}"`,
+                          '',
+                          `    PATTERN DETECTED:`,
+                          `    ${signal.pattern}`,
+                          '',
+                          `    RISK ASSESSMENT:`,
+                          `    ${signal.risk}`,
+                          '',
+                        ]),
+                        '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+                        'OPPOSING COUNSEL PERSPECTIVE',
+                        '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+                        '',
+                        ...reviewMemo.opposingCounselPerspective.flatMap((attack, idx) => [
+                          `[${idx + 1}] VULNERABILITY:`,
+                          `    ${attack.vulnerability}`,
+                          '',
+                          `    LIKELY CHALLENGE:`,
+                          `    ${attack.likelyChallenge}`,
+                          '',
+                        ]),
+                        '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+                        `FORMATTING ISSUES (${reviewMemo.formattingIssues.length})`,
+                        '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+                        '',
+                        ...reviewMemo.formattingIssues.flatMap((issue, idx) => [
+                          `[${idx + 1}] QUOTE:`,
+                          `    "${issue.quote}"`,
+                          '',
+                          `    PROBLEM:`,
+                          `    ${issue.problem}`,
+                          '',
+                          `    RECOMMENDATION:`,
+                          `    ${issue.recommendation}`,
+                          '',
+                        ]),
+                        '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+                        'JURISDICTION NOTES',
+                        '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+                        '',
+                        reviewMemo.jurisdictionNotes,
+                      ];
+
+                      const reportContent = reportSections.join('\n');
+                      const blob = new Blob([reportContent], { type: 'text/plain' });
                       const url = URL.createObjectURL(blob);
                       const a = document.createElement('a');
                       a.href = url;
-                      a.download = 'kord-legal-report.txt';
+                      a.download = `kord-legal-report-${Date.now()}.txt`;
                       a.click();
                       URL.revokeObjectURL(url);
                     }}
